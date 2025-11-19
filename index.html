@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebOS 2025 - Ultimate Edition</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --accent-color: #0078d4;
+            --taskbar-height: 48px;
+            --window-radius: 8px;
+            --glass-bg: rgba(32, 32, 32, 0.75);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+            --text-color: #ffffff;
+        }
+
+        * { box-sizing: border-box; user-select: none; }
+        body { margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzAwMDAwMCIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzEwMjAzMCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZykiLz48L3N2Zz4=') no-repeat center center fixed; background-size: cover; color: var(--text-color); height: 100vh; }
+
+        /* Boot Screen */
+        #boot-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: black; z-index: 9999; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; color: white;
+            font-family: monospace; transition: opacity 1s ease;
+        }
+        .loader {
+            border: 4px solid #333; border-top: 4px solid var(--accent-color);
+            border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Desktop */
+        #desktop {
+            width: 100%; height: calc(100vh - var(--taskbar-height));
+            position: relative; padding: 10px; display: flex; flex-direction: column; flex-wrap: wrap; align-content: flex-start;
+        }
+        .desktop-icon {
+            width: 80px; height: 90px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; margin: 5px;
+            border-radius: 4px; cursor: pointer; transition: background 0.2s;
+            text-align: center; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+        .desktop-icon:hover { background: rgba(255, 255, 255, 0.1); }
+        .desktop-icon svg { width: 40px; height: 40px; margin-bottom: 5px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+        .desktop-icon span { font-size: 12px; line-height: 1.2; word-wrap: break-word; }
+
+        /* Taskbar */
+        #taskbar {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: var(--taskbar-height);
+            background: var(--glass-bg); backdrop-filter: blur(10px);
+            border-top: var(--glass-border); display: flex; align-items: center;
+            justify-content: space-between; padding: 0 10px; z-index: 9000;
+        }
+        .start-btn {
+            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+            border-radius: 4px; cursor: pointer; transition: background 0.2s;
+        }
+        .start-btn:hover { background: rgba(255, 255, 255, 0.1); }
+        .taskbar-apps { flex-grow: 1; display: flex; justify-content: center; gap: 5px; height: 100%; align-items: center; }
+        .taskbar-item {
+            width: 40px; height: 40px; border-radius: 4px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.2s; position: relative;
+        }
+        .taskbar-item:hover { background: rgba(255, 255, 255, 0.1); }
+        .taskbar-item.active { background: rgba(255, 255, 255, 0.15); border-bottom: 2px solid var(--accent-color); }
+        .taskbar-item svg { width: 24px; height: 24px; }
+        .system-tray { display: flex; align-items: center; gap: 10px; font-size: 12px; padding-right: 10px; }
+
+        /* Start Menu */
+        #start-menu {
+            position: fixed; bottom: 55px; left: 50%; transform: translateX(-50%) translateY(20px);
+            width: 600px; height: 500px; background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(20px); border: var(--glass-border); border-radius: 8px;
+            display: none; flex-direction: column; padding: 20px; z-index: 9001;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: all 0.2s; opacity: 0;
+        }
+        #start-menu.open { display: flex; transform: translateX(-50%) translateY(0); opacity: 1; }
+        .search-bar {
+            width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid #444;
+            border-radius: 4px; color: white; margin-bottom: 20px;
+        }
+        .app-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; overflow-y: auto; }
+        .app-grid-item {
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            cursor: pointer; padding: 10px; border-radius: 4px;
+        }
+        .app-grid-item:hover { background: rgba(255,255,255,0.1); }
+        .app-grid-item svg { width: 32px; height: 32px; }
+        .app-grid-item span { font-size: 11px; }
+
+        /* Windows */
+        .window {
+            position: absolute; background: #252526; border: var(--glass-border);
+            border-radius: var(--window-radius); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; overflow: hidden; min-width: 300px; min-height: 200px;
+            resize: both;
+        }
+        .title-bar {
+            height: 32px; background: #333; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 10px; cursor: default; user-select: none;
+        }
+        .title-bar-text { font-size: 12px; display: flex; align-items: center; gap: 8px; }
+        .window-controls { display: flex; gap: 0; height: 100%; }
+        .control-btn {
+            width: 46px; height: 100%; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 14px;
+        }
+        .control-btn:hover { background: #444; }
+        .control-btn.close:hover { background: #e81123; }
+        .window-content { flex-grow: 1; position: relative; overflow: hidden; background: #1e1e1e; }
+
+        /* App Specific Styles */
+        /* Terminal */
+        .terminal { background: #0c0c0c; color: #cccccc; font-family: 'Consolas', monospace; padding: 10px; height: 100%; overflow-y: auto; font-size: 14px; }
+        .prompt { color: #00ff00; }
+        .command-line { display: flex; }
+        .command-input { background: transparent; border: none; color: white; flex-grow: 1; outline: none; font-family: inherit; font-size: inherit; }
+
+        /* Notepad */
+        .notepad-area { width: 100%; height: 100%; background: #fff; color: #000; border: none; resize: none; padding: 10px; font-family: 'Consolas', monospace; outline: none; }
+
+        /* VS Code */
+        .vscode-layout { display: flex; height: 100%; }
+        .vscode-sidebar { width: 50px; background: #333; display: flex; flex-direction: column; align-items: center; padding-top: 10px; gap: 15px; }
+        .vscode-sidebar svg { width: 24px; height: 24px; fill: #858585; }
+        .vscode-editor { flex-grow: 1; background: #1e1e1e; display: flex; flex-direction: column; }
+        .vscode-tabs { height: 35px; background: #252526; display: flex; align-items: center; }
+        .vscode-tab { padding: 8px 15px; background: #1e1e1e; color: white; font-size: 12px; border-top: 1px solid var(--accent-color); display: flex; align-items: center; gap: 5px; }
+        .vscode-code-area { flex-grow: 1; padding: 10px; font-family: 'Consolas', monospace; color: #d4d4d4; outline: none; white-space: pre; overflow: auto; }
+        .keyword { color: #569cd6; } .string { color: #ce9178; } .comment { color: #6a9955; } .function { color: #dcdcaa; }
+
+        /* File Explorer */
+        .explorer-layout { display: flex; height: 100%; flex-direction: column; }
+        .explorer-toolbar { height: 40px; background: #333; display: flex; align-items: center; padding: 0 10px; gap: 10px; border-bottom: 1px solid #444; }
+        .explorer-body { display: flex; flex-grow: 1; }
+        .explorer-sidebar { width: 150px; background: #252526; border-right: 1px solid #333; padding: 10px; font-size: 13px; }
+        .explorer-main { flex-grow: 1; padding: 10px; display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); grid-auto-rows: 100px; gap: 10px; background: #1e1e1e; }
+        .file-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 5px; border-radius: 4px; }
+        .file-item:hover { background: rgba(255,255,255,0.1); }
+        .file-item svg { width: 40px; height: 40px; margin-bottom: 5px; }
+        .file-item span { font-size: 12px; text-align: center; word-break: break-all; }
+
+        /* Paint */
+        .paint-layout { display: flex; flex-direction: column; height: 100%; background: #f0f0f0; }
+        .paint-toolbar { height: 50px; background: #e1e1e1; display: flex; align-items: center; padding: 0 10px; gap: 10px; border-bottom: 1px solid #ccc; }
+        .paint-canvas-container { flex-grow: 1; overflow: auto; display: flex; justify-content: center; align-items: center; background: #ccc; }
+        #paint-canvas { background: white; box-shadow: 0 0 10px rgba(0,0,0,0.2); cursor: crosshair; }
+
+        /* Game (Snake) */
+        .game-container { width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        #snake-canvas { border: 2px solid #00ff00; box-shadow: 0 0 20px #00ff00; }
+        .game-score { color: #00ff00; font-family: 'Courier New', Courier, monospace; margin-bottom: 10px; font-size: 20px; }
+
+        /* Video Editor */
+        .video-layout { display: flex; flex-direction: column; height: 100%; background: #222; }
+        .video-preview { flex-grow: 1; background: #000; display: flex; justify-content: center; align-items: center; position: relative; }
+        .video-timeline { height: 150px; background: #333; border-top: 1px solid #444; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .timeline-track { height: 40px; background: #444; border-radius: 4px; position: relative; overflow: hidden; }
+        .timeline-clip { position: absolute; height: 100%; background: var(--accent-color); border-radius: 4px; opacity: 0.7; border: 1px solid white; }
+        .play-btn { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--accent-color); border: none; color: white; padding: 10px 20px; border-radius: 20px; cursor: pointer; }
+
+        /* Calculator */
+        .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; height: 100%; background: #333; padding: 2px; }
+        .calc-display { grid-column: span 4; background: #222; color: white; font-size: 32px; display: flex; align-items: center; justify-content: flex-end; padding: 0 20px; font-family: monospace; }
+        .calc-btn { border: none; background: #3a3a3a; color: white; font-size: 18px; cursor: pointer; transition: background 0.1s; }
+        .calc-btn:hover { background: #505050; }
+        .calc-btn.accent { background: var(--accent-color); }
+        .calc-btn.accent:hover { background: #0063b1; }
+
+        /* Icons (SVG Strings) */
+        .icon-pc { fill: #4af; }
+        .icon-folder { fill: #fc0; }
+        .icon-file { fill: #fff; }
+        .icon-trash { fill: #aaa; }
+    </style>
+</head>
+<body>
+
+    <!-- Boot Screen -->
+    <div id="boot-screen">
+        <div class="loader"></div>
+        <div>INITIALIZING WEB OS...</div>
+        <div style="font-size: 12px; color: #888; margin-top: 10px;">Loading Kernel... Done.</div>
+        <div style="font-size: 12px; color: #888;">Mounting Virtual FS... Done.</div>
+    </div>
+
+    <!-- Desktop Environment -->
+    <div id="desktop">
+        <!-- Desktop Icons will be injected here -->
+    </div>
+
+    <!-- Start Menu -->
+    <div id="start-menu">
+        <input type="text" class="search-bar" placeholder="Type here to search...">
+        <div style="font-size: 12px; color: #aaa; margin-bottom: 10px;">Pinned Apps</div>
+        <div class="app-grid" id="start-menu-grid">
+            <!-- Apps injected here -->
+        </div>
+        <div style="margin-top: auto; padding-top: 10px; border-top: 1px solid #444; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 30px; height: 30px; background: #555; border-radius: 50%;"></div>
+                <span>User</span>
+            </div>
+            <div style="cursor: pointer;" onclick="location.reload()">⏻</div>
+        </div>
+    </div>
+
+    <!-- Taskbar -->
+    <div id="taskbar">
+        <div class="start-btn" onclick="toggleStartMenu()">
+            <svg viewBox="0 0 24 24" fill="white"><path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z"/></svg>
+        </div>
+        <div class="taskbar-apps" id="taskbar-apps">
+            <!-- Active apps -->
+        </div>
+        <div class="system-tray">
+            <span id="clock">12:00 PM</span>
+        </div>
+    </div>
+
+    <script>
+        // --- System Core ---
+        const apps = [
+            { id: 'terminal', name: 'Terminal', icon: '<path d="M20,4H4A2,2 0 0,0 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6A2,2 0 0,0 20,4M20,18H4V6H20V18M7.5,15L6,13.5L9.5,10L6,6.5L7.5,5L12.5,10L7.5,15M13,15H18V13H13V15Z" fill="white"/>', action: openTerminal },
+            { id: 'notepad', name: 'Notepad', icon: '<path d="M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,5V19H19V12H12V5H5Z" fill="#4af"/>', action: openNotepad },
+            { id: 'vscode', name: 'VS Code', icon: '<path d="M21.6,12.5L16.9,20.6C16.7,21 16.2,21.1 15.8,20.9L12,18.7L8.2,20.9C7.8,21.1 7.3,21 7.1,20.6L2.4,12.5C2.2,12.2 2.2,11.8 2.4,11.5L7.1,3.4C7.3,3 7.8,2.9 8.2,3.1L12,5.3L15.8,3.1C16.2,2.9 16.7,3 16.9,3.4L21.6,11.5C21.8,11.8 21.8,12.2 21.6,12.5M12,16.5L18.5,12L12,7.5L5.5,12L12,16.5Z" fill="#0078d4"/>', action: openVSCode },
+            { id: 'explorer', name: 'Explorer', icon: '<path d="M20,18H4V8H20M20,6H12L10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6Z" fill="#fc0"/>', action: openExplorer },
+            { id: 'paint', name: 'Paint', icon: '<path d="M19,19H5V5H19M19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M13.96,12.29L11.21,15.83L9.25,13.47L6.5,17H17.5L13.96,12.29Z" fill="#e06"/>', action: openPaint },
+            { id: 'snake', name: 'Cyber Snake', icon: '<path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6M12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8Z" fill="#0f0"/>', action: openSnake },
+            { id: 'video', name: 'Video Editor', icon: '<path d="M18,4L20,8H17L15,4H13L15,8H12L10,4H8L10,8H7L5,4H4A2,2 0 0,0 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V4H18Z" fill="#a0f"/>', action: openVideoEditor },
+            { id: 'calc', name: 'Calculator', icon: '<path d="M7,2H17A2,2 0 0,1 19,4V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V4A2,2 0 0,1 7,2M7,4V8H17V4H7M7,10V12H9V10H7M11,10V12H13V10H11M15,10V12H17V10H15M7,14V16H9V14H7M11,14V16H13V14H11M15,14V16H17V14H15M7,18V20H9V18H7M11,18V20H13V18H11M15,18V20H17V18H15Z" fill="#aaa"/>', action: openCalculator },
+            { id: 'browser', name: 'Browser', icon: '<path d="M16.36,14C16.44,13.34 16.5,12.68 16.5,12C16.5,11.32 16.44,10.66 16.36,10H19.74C19.9,10.64 20,11.31 20,12C20,12.69 19.9,13.36 19.74,14M14.81,14C14.89,13.34 14.95,12.68 14.95,12C14.95,11.32 14.89,10.66 14.81,10H9.19C9.11,10.66 9.05,11.32 9.05,12C9.05,12.68 9.11,13.34 9.19,14M4.26,14C4.1,13.36 4,12.69 4,12C4,11.31 4.1,10.64 4.26,10H7.64C7.56,10.66 7.5,11.32 7.5,12C7.5,12.68 7.56,13.34 7.64,14M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2Z" fill="#4af"/>', action: openBrowser }
+        ];
+
+        let zIndexCounter = 100;
+        let activeWindow = null;
+
+        // Boot Sequence
+        window.onload = () => {
+            setTimeout(() => {
+                document.getElementById('boot-screen').style.opacity = 0;
+                setTimeout(() => {
+                    document.getElementById('boot-screen').style.display = 'none';
+                    initDesktop();
+                }, 1000);
+            }, 2000);
+            updateClock();
+            setInterval(updateClock, 1000);
+        };
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        function initDesktop() {
+            const desktop = document.getElementById('desktop');
+            const startMenuGrid = document.getElementById('start-menu-grid');
+            
+            apps.forEach(app => {
+                // Desktop Icon
+                const icon = document.createElement('div');
+                icon.className = 'desktop-icon';
+                icon.innerHTML = `<svg viewBox="0 0 24 24">${app.icon}</svg><span>${app.name}</span>`;
+                icon.ondblclick = app.action;
+                desktop.appendChild(icon);
+
+                // Start Menu Item
+                const item = document.createElement('div');
+                item.className = 'app-grid-item';
+                item.innerHTML = `<svg viewBox="0 0 24 24">${app.icon}</svg><span>${app.name}</span>`;
+                item.onclick = () => { toggleStartMenu(); app.action(); };
+                startMenuGrid.appendChild(item);
+            });
+        }
+
+        function toggleStartMenu() {
+            const menu = document.getElementById('start-menu');
+            menu.classList.toggle('open');
+        }
+
+        document.getElementById('desktop').onclick = () => {
+            document.getElementById('start-menu').classList.remove('open');
+        };
+
+        // Window Management
+        function createWindow(title, content, width = 600, height = 400) {
+            const id = 'win-' + Date.now();
+            const win = document.createElement('div');
+            win.className = 'window';
+            win.id = id;
+            win.style.width = width + 'px';
+            win.style.height = height + 'px';
+            win.style.top = '50px';
+            win.style.left = '50px';
+            win.style.zIndex = ++zIndexCounter;
+
+            win.innerHTML = `
+                <div class="title-bar" onmousedown="startDrag(event, '${id}')">
+                    <div class="title-bar-text">
+                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:white;margin-right:5px;">${apps.find(a => title.includes(a.name))?.icon || ''}</svg>
+                        ${title}
+                    </div>
+                    <div class="window-controls">
+                        <div class="control-btn" onclick="minimizeWindow('${id}')">_</div>
+                        <div class="control-btn" onclick="maximizeWindow('${id}')">□</div>
+                        <div class="control-btn close" onclick="closeWindow('${id}')">✕</div>
+                    </div>
+                </div>
+                <div class="window-content">${content}</div>
+            `;
+
+            win.onmousedown = () => {
+                win.style.zIndex = ++zIndexCounter;
+                activeWindow = win;
+                updateTaskbar();
+            };
+
+            document.body.appendChild(win);
+            addToTaskbar(id, title);
+            return win.querySelector('.window-content');
+        }
+
+        function closeWindow(id) {
+            document.getElementById(id).remove();
+            document.getElementById('task-' + id).remove();
+        }
+
+        function minimizeWindow(id) {
+            document.getElementById(id).style.display = 'none';
+            document.getElementById('task-' + id).classList.remove('active');
+        }
+
+        function maximizeWindow(id) {
+            const win = document.getElementById(id);
+            if (win.style.width === '100%') {
+                win.style.width = '600px'; win.style.height = '400px'; win.style.top = '50px'; win.style.left = '50px';
+            } else {
+                win.style.width = '100%'; win.style.height = 'calc(100% - 48px)'; win.style.top = '0'; win.style.left = '0';
+            }
+        }
+
+        function addToTaskbar(id, title) {
+            const taskbar = document.getElementById('taskbar-apps');
+            const item = document.createElement('div');
+            item.className = 'taskbar-item active';
+            item.id = 'task-' + id;
+            const appIcon = apps.find(a => title.includes(a.name))?.icon || '';
+            item.innerHTML = `<svg viewBox="0 0 24 24">${appIcon}</svg>`;
+            item.onclick = () => {
+                const win = document.getElementById(id);
+                if (win.style.display === 'none') {
+                    win.style.display = 'flex';
+                    win.style.zIndex = ++zIndexCounter;
+                } else if (parseInt(win.style.zIndex) < zIndexCounter) {
+                    win.style.zIndex = ++zIndexCounter;
+                } else {
+                    win.style.display = 'none';
+                    item.classList.remove('active');
+                    return;
+                }
+                updateTaskbar();
+            };
+            taskbar.appendChild(item);
+        }
+
+        function updateTaskbar() {
+            document.querySelectorAll('.taskbar-item').forEach(item => item.classList.remove('active'));
+            if (activeWindow && activeWindow.style.display !== 'none') {
+                const id = activeWindow.id;
+                const task = document.getElementById('task-' + id);
+                if(task) task.classList.add('active');
+            }
+        }
+
+        // Dragging Logic
+        let isDragging = false;
+        let dragOffset = { x: 0, y: 0 };
+        let dragWin = null;
+
+        function startDrag(e, id) {
+            if(e.target.closest('.window-controls')) return;
+            isDragging = true;
+            dragWin = document.getElementById(id);
+            dragOffset.x = e.clientX - dragWin.offsetLeft;
+            dragOffset.y = e.clientY - dragWin.offsetTop;
+            dragWin.style.zIndex = ++zIndexCounter;
+            activeWindow = dragWin;
+            updateTaskbar();
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging && dragWin) {
+                dragWin.style.left = (e.clientX - dragOffset.x) + 'px';
+                dragWin.style.top = (e.clientY - dragOffset.y) + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', () => { isDragging = false; dragWin = null; });
+
+        // --- Apps Implementation ---
+
+        // 1. Terminal (with Mock Python)
+        function openTerminal() {
+            const content = `
+                <div class="terminal" id="term-${Date.now()}" onclick="this.querySelector('input').focus()">
+                    <div>WebOS Terminal v1.0</div>
+                    <div>(c) 2025 WebOS Corp. All rights reserved.</div>
+                    <br>
+                    <div class="history"></div>
+                    <div class="command-line">
+                        <span class="prompt">C:\\Users\\Admin&gt;</span>
+                        <input type="text" class="command-input" onkeydown="handleCommand(event, this)">
+                    </div>
+                </div>
+            `;
+            createWindow('Terminal', content, 600, 400);
+        }
+
+        let pythonMode = false;
+
+        function handleCommand(e, input) {
+            if (e.key === 'Enter') {
+                const cmd = input.value.trim();
+                const history = input.parentElement.previousElementSibling;
+                const prompt = pythonMode ? '>>> ' : 'C:\\Users\\Admin&gt;';
+                
+                history.innerHTML += `<div><span class="prompt">${prompt}</span> ${cmd}</div>`;
+                
+                if (pythonMode) {
+                    if (cmd === 'exit()') {
+                        pythonMode = false;
+                        history.innerHTML += `<div>Exiting Python environment...</div>`;
+                    } else {
+                        try {
+                            // Basic JS eval to simulate Python math/logic
+                            // Polyfill print for the simulation
+                            const print = (msg) => { history.innerHTML += `<div>${msg}</div>`; return ''; };
+                            const result = eval(cmd);
+                            if (result !== undefined && result !== '') history.innerHTML += `<div>${result}</div>`;
+                        } catch (err) {
+                            history.innerHTML += `<div style="color:red">Traceback (most recent call last):<br>  File "<stdin>", line 1, in <module><br>NameError: name '${cmd}' is not defined</div>`;
+                        }
+                    }
+                } else {
+                    if (cmd === 'help') {
+                        history.innerHTML += `<div>Available commands: help, cls, dir, echo, python, date, matrix</div>`;
+                    } else if (cmd === 'cls') {
+                        history.innerHTML = '';
+                    } else if (cmd === 'dir') {
+                        history.innerHTML += `<div> Directory of C:\\Users\\Admin<br><br>11/19/2025  12:00 PM    &lt;DIR&gt;          Documents<br>11/19/2025  12:00 PM    &lt;DIR&gt;          Downloads<br>11/19/2025  12:00 PM               4096  secret.txt</div>`;
+                    } else if (cmd === 'python') {
+                        pythonMode = true;
+                        history.innerHTML += `<div>Python 3.12.1 (main, Nov 19 2025, 12:00:00) [MSC v.1916 64 bit (AMD64)] on win32<br>Type "help", "copyright", "credits" or "license" for more information.</div>`;
+                    } else if (cmd.startsWith('echo ')) {
+                        history.innerHTML += `<div>${cmd.substring(5)}</div>`;
+                    } else if (cmd === 'matrix') {
+                        history.innerHTML += `<div style="color:#0f0">Wake up, Neo...<br>The Matrix has you...</div>`;
+                    } else if (cmd === '') {
+                    } else {
+                        history.innerHTML += `<div>'${cmd}' is not recognized as an internal or external command.</div>`;
+                    }
+                }
+                
+                input.value = '';
+                input.parentElement.querySelector('.prompt').innerText = pythonMode ? '>>> ' : 'C:\\Users\\Admin>';
+                input.scrollIntoView();
+            }
+        }
+
+        // 2. Notepad
+        function openNotepad() {
+            const content = `<textarea class="notepad-area" placeholder="Start typing..."></textarea>`;
+            createWindow('Notepad', content, 500, 400);
+        }
+
+        // 3. VS Code
+        function openVSCode() {
+            const content = `
+                <div class="vscode-layout">
+                    <div class="vscode-sidebar">
+                        <svg viewBox="0 0 24 24"><path d="M20,6H12L10,4H4A2,2 0 0,0 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8A2,2 0 0,0 20,6Z"/></svg>
+                        <svg viewBox="0 0 24 24"><path d="M15.5,14L20.5,19L19,20.5L14,15.5V14.71L13.73,14.43C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.43,13.73L14.71,14H15.5M9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14Z"/></svg>
+                    </div>
+                    <div class="vscode-editor">
+                        <div class="vscode-tabs">
+                            <div class="vscode-tab">
+                                <span style="color:#e06c75">JS</span> script.js <span style="margin-left:5px;cursor:pointer">x</span>
+                            </div>
+                        </div>
+                        <div class="vscode-code-area" contenteditable="true" spellcheck="false">
+<span class="keyword">function</span> <span class="function">helloWorld</span>() {
+    <span class="comment">// This is a simulated editor</span>
+    <span class="keyword">const</span> message = <span class="string">"Welcome to WebOS!"</span>;
+    console.<span class="function">log</span>(message);
+}</div>
+                    </div>
+                </div>
+            `;
+            createWindow('VS Code - script.js', content, 800, 500);
+        }
+
+        // 4. File Explorer
+        function openExplorer() {
+            const content = `
+                <div class="explorer-layout">
+                    <div class="explorer-toolbar">
+                        <button>Back</button> <input type="text" value="C:\\Users\\Admin\\Desktop" style="flex-grow:1">
+                    </div>
+                    <div class="explorer-body">
+                        <div class="explorer-sidebar">
+                            <div>Desktop</div>
+                            <div>Documents</div>
+                            <div>Downloads</div>
+                            <div>Pictures</div>
+                            <div>C: Drive</div>
+                        </div>
+                        <div class="explorer-main">
+                            <div class="file-item"><svg viewBox="0 0 24 24" class="icon-folder"><path d="M20,18H4V8H20M20,6H12L10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6Z"/></svg><span>Projects</span></div>
+                            <div class="file-item"><svg viewBox="0 0 24 24" class="icon-file"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg><span>Resume.pdf</span></div>
+                            <div class="file-item"><svg viewBox="0 0 24 24" class="icon-file"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg><span>Notes.txt</span></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            createWindow('File Explorer', content, 700, 450);
+        }
+
+        // 5. Paint
+        function openPaint() {
+            const content = `
+                <div class="paint-layout">
+                    <div class="paint-toolbar">
+                        <input type="color" id="paint-color" value="#000000">
+                        <input type="range" id="paint-size" min="1" max="20" value="5">
+                        <button onclick="clearPaint()">Clear</button>
+                    </div>
+                    <div class="paint-canvas-container">
+                        <canvas id="paint-canvas" width="600" height="400"></canvas>
+                    </div>
+                </div>
+            `;
+            const winContent = createWindow('Paint', content, 700, 500);
+            
+            // Initialize Canvas
+            setTimeout(() => {
+                const canvas = winContent.querySelector('#paint-canvas');
+                const ctx = canvas.getContext('2d');
+                let painting = false;
+
+                function startPosition(e) {
+                    painting = true;
+                    draw(e);
+                }
+                function finishedPosition() {
+                    painting = false;
+                    ctx.beginPath();
+                }
+                function draw(e) {
+                    if (!painting) return;
+                    const rect = canvas.getBoundingClientRect();
+                    ctx.lineWidth = winContent.querySelector('#paint-size').value;
+                    ctx.lineCap = 'round';
+                    ctx.strokeStyle = winContent.querySelector('#paint-color').value;
+                    
+                    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+                }
+
+                canvas.addEventListener('mousedown', startPosition);
+                canvas.addEventListener('mouseup', finishedPosition);
+                canvas.addEventListener('mousemove', draw);
+                
+                window.clearPaint = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }, 100);
+        }
+
+        // 6. Snake Game
+        function openSnake() {
+            const content = `
+                <div class="game-container">
+                    <div class="game-score">Score: <span id="score">0</span></div>
+                    <canvas id="snake-canvas" width="400" height="400" style="background:black"></canvas>
+                    <div style="margin-top:10px;color:#0f0">Use Arrow Keys to Play</div>
+                </div>
+            `;
+            const winContent = createWindow('Cyber Snake', content, 450, 500);
+            
+            setTimeout(() => {
+                const canvas = winContent.querySelector('#snake-canvas');
+                const ctx = canvas.getContext('2d');
+                const box = 20;
+                let snake = [{x: 9 * box, y: 10 * box}];
+                let food = { x: Math.floor(Math.random()*19+1) * box, y: Math.floor(Math.random()*19+1) * box };
+                let score = 0;
+                let d;
+                
+                document.addEventListener('keydown', direction);
+                function direction(event) {
+                    if(event.keyCode == 37 && d != 'RIGHT') d = 'LEFT';
+                    else if(event.keyCode == 38 && d != 'DOWN') d = 'UP';
+                    else if(event.keyCode == 39 && d != 'LEFT') d = 'RIGHT';
+                    else if(event.keyCode == 40 && d != 'UP') d = 'DOWN';
+                }
+
+                function draw() {
+                    if(!document.body.contains(canvas)) return; // Stop if window closed
+                    
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(0, 0, 400, 400);
+                    
+                    for(let i=0; i<snake.length; i++) {
+                        ctx.fillStyle = (i == 0) ? '#00ff00' : '#008800';
+                        ctx.fillRect(snake[i].x, snake[i].y, box, box);
+                        ctx.strokeStyle = 'black';
+                        ctx.strokeRect(snake[i].x, snake[i].y, box, box);
+                    }
+                    
+                    ctx.fillStyle = 'red';
+                    ctx.fillRect(food.x, food.y, box, box);
+                    
+                    let snakeX = snake[0].x;
+                    let snakeY = snake[0].y;
+                    
+                    if(d == 'LEFT') snakeX -= box;
+                    if(d == 'UP') snakeY -= box;
+                    if(d == 'RIGHT') snakeX += box;
+                    if(d == 'DOWN') snakeY += box;
+                    
+                    if(snakeX == food.x && snakeY == food.y) {
+                        score++;
+                        winContent.querySelector('#score').innerText = score;
+                        food = { x: Math.floor(Math.random()*19+1) * box, y: Math.floor(Math.random()*19+1) * box };
+                    } else {
+                        snake.pop();
+                    }
+                    
+                    if(snakeX < 0 || snakeX > 380 || snakeY < 0 || snakeY > 380 || collision(snakeX, snakeY, snake)) {
+                        clearInterval(game);
+                        alert('Game Over! Score: ' + score);
+                    }
+                    
+                    let newHead = { x: snakeX, y: snakeY };
+                    snake.unshift(newHead);
+                }
+                
+                function collision(x, y, array) {
+                    for(let i=0; i<array.length; i++) {
+                        if(x == array[i].x && y == array[i].y) return true;
+                    }
+                    return false;
+                }
+                
+                let game = setInterval(draw, 100);
+            }, 100);
+        }
+
+        // 7. Video Editor
+        function openVideoEditor() {
+            const content = `
+                <div class="video-layout">
+                    <div class="video-preview">
+                        <div style="color:white; font-size:20px;">[ PREVIEW WINDOW ]</div>
+                        <button class="play-btn">▶ Play</button>
+                    </div>
+                    <div class="video-timeline">
+                        <div style="color:#aaa; font-size:12px;">Timeline</div>
+                        <div class="timeline-track">
+                            <div class="timeline-clip" style="width: 100px; left: 0;">Clip 1</div>
+                            <div class="timeline-clip" style="width: 150px; left: 105px; background: #e06;">Clip 2</div>
+                        </div>
+                        <div class="timeline-track">
+                            <div class="timeline-clip" style="width: 200px; left: 0; background: #4af;">Audio Track</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            createWindow('Video Editor Pro', content, 800, 500);
+        }
+
+        // 8. Calculator
+        function openCalculator() {
+            const content = `
+                <div class="calc-grid">
+                    <div class="calc-display" id="calc-disp">0</div>
+                    <button class="calc-btn" onclick="calcInput('C')">C</button>
+                    <button class="calc-btn" onclick="calcInput('/')">/</button>
+                    <button class="calc-btn" onclick="calcInput('*')">*</button>
+                    <button class="calc-btn" onclick="calcInput('-')">-</button>
+                    <button class="calc-btn" onclick="calcInput('7')">7</button>
+                    <button class="calc-btn" onclick="calcInput('8')">8</button>
+                    <button class="calc-btn" onclick="calcInput('9')">9</button>
+                    <button class="calc-btn" onclick="calcInput('+')">+</button>
+                    <button class="calc-btn" onclick="calcInput('4')">4</button>
+                    <button class="calc-btn" onclick="calcInput('5')">5</button>
+                    <button class="calc-btn" onclick="calcInput('6')">6</button>
+                    <button class="calc-btn accent" style="grid-row: span 3" onclick="calcInput('=')">=</button>
+                    <button class="calc-btn" onclick="calcInput('1')">1</button>
+                    <button class="calc-btn" onclick="calcInput('2')">2</button>
+                    <button class="calc-btn" onclick="calcInput('3')">3</button>
+                    <button class="calc-btn" style="grid-column: span 2" onclick="calcInput('0')">0</button>
+                    <button class="calc-btn" onclick="calcInput('.')">.</button>
+                </div>
+            `;
+            createWindow('Calculator', content, 300, 400);
+            
+            window.calcInput = (val) => {
+                const disp = document.getElementById('calc-disp');
+                if(val === 'C') disp.innerText = '0';
+                else if(val === '=') {
+                    try { disp.innerText = eval(disp.innerText); } catch { disp.innerText = 'Error'; }
+                } else {
+                    if(disp.innerText === '0') disp.innerText = val;
+                    else disp.innerText += val;
+                }
+            };
+        }
+
+        // 9. Browser
+        function openBrowser() {
+            const content = `
+                <div style="display:flex; flex-direction:column; height:100%;">
+                    <div style="padding:5px; background:#333; display:flex; gap:5px;">
+                        <button>←</button><button>→</button><button>⟳</button>
+                        <input type="text" value="https://www.wikipedia.org" style="flex-grow:1; border:none; padding:5px;">
+                    </div>
+                    <iframe src="https://www.wikipedia.org" style="flex-grow:1; border:none; background:white;"></iframe>
+                </div>
+            `;
+            createWindow('Browser', content, 800, 600);
+        }
+
+    </script>
+</body>
+</html>
