@@ -1,0 +1,2013 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>WebOS A - Mini Windows in One HTML</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+/* ========== 基础与主题 ========== */
+:root{
+  --accent:#2b7bff;
+  --accent-soft:rgba(43,123,255,.12);
+  --accent-strong:rgba(43,123,255,.75);
+  --bg:#101822;
+  --bg-soft:#151f2b;
+  --bg-softer:#1d2736;
+  --border-soft:rgba(255,255,255,.08);
+  --border-strong:rgba(255,255,255,.18);
+  --text:#e5edf7;
+  --text-soft:#a7b4c8;
+  --danger:#ff557a;
+  --shadow-window:0 18px 45px rgba(0,0,0,.65);
+  --radius-window:12px;
+  --radius-soft:8px;
+  --taskbar-h:42px;
+  --anim-fast:120ms cubic-bezier(.16,1,.3,1);
+  --anim-med:180ms cubic-bezier(.16,1,.3,1);
+  --glass:rgba(11,18,32,.82);
+  --glass-strong:rgba(11,18,32,.94);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif;
+  background:radial-gradient(circle at top left,#1a2740 0,#050712 52%,#020308 100%);
+  color:var(--text);
+  user-select:none;
+}
+
+/* ========== 桌面与图标 ========== */
+#desktop{
+  position:absolute;inset:0;
+  padding:16px 16px var(--taskbar-h);
+  display:flex;flex-wrap:wrap;align-content:flex-start;
+  gap:14px;
+}
+.desktop-icon{
+  width:80px;padding:8px 4px;border-radius:10px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  color:var(--text-soft);font-size:11px;text-align:center;
+  cursor:default;
+  transition:background var(--anim-fast),transform var(--anim-fast),box-shadow var(--anim-fast),color var(--anim-fast);
+}
+.desktop-icon:hover{
+  background:rgba(255,255,255,.06);
+  transform:translateY(-1px);
+  color:var(--text);
+  box-shadow:0 6px 18px rgba(0,0,0,.45);
+}
+.desktop-icon span.icon-glyph{
+  width:34px;height:34px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:19px;
+  background:linear-gradient(145deg,var(--accent),#42e695);
+  color:#fff;
+  box-shadow:0 8px 20px rgba(43,123,255,.5);
+}
+.desktop-icon[data-app="files"] span.icon-glyph{background:linear-gradient(145deg,#ffb347,#ffcc33);}
+.desktop-icon[data-app="paint"] span.icon-glyph{background:linear-gradient(145deg,#ff6cab,#7366ff);}
+.desktop-icon[data-app="games"] span.icon-glyph{background:linear-gradient(145deg,#00c6ff,#0072ff);}
+.desktop-icon[data-app="terminal"] span.icon-glyph{background:linear-gradient(145deg,#000428,#004e92);}
+.desktop-icon[data-app="python"] span.icon-glyph{background:linear-gradient(145deg,#ffd200,#f7971e);}
+.desktop-icon[data-app="editor"] span.icon-glyph{background:linear-gradient(145deg,#0cebeb,#20e3b2);}
+.desktop-icon[data-app="video"] span.icon-glyph{background:linear-gradient(145deg,#fc5c7d,#6a82fb);}
+.desktop-icon[data-app="settings"] span.icon-glyph{background:linear-gradient(145deg,#434343,#000000);}
+
+/* ========== 任务栏 ========== */
+#taskbar{
+  position:fixed;left:0;right:0;bottom:0;
+  height:var(--taskbar-h);
+  background:linear-gradient(to top,rgba(0,0,0,.85),rgba(11,18,32,.9));
+  border-top:1px solid rgba(255,255,255,.08);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 12px;gap:12px;
+  backdrop-filter:blur(18px);
+}
+#taskbar-left,#taskbar-center,#taskbar-right{
+  display:flex;align-items:center;gap:6px;
+}
+#start-button{
+  width:30px;height:30px;border-radius:9px;
+  background:radial-gradient(circle at 20% 10%,#fff 0,rgba(255,255,255,.4) 18%,rgba(255,255,255,0) 40%),linear-gradient(145deg,#1d976c,#2b7bff);
+  box-shadow:0 6px 14px rgba(0,0,0,.8);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:transform var(--anim-fast),box-shadow var(--anim-fast),filter var(--anim-fast);
+}
+#start-button:hover{
+  transform:translateY(-1px) scale(1.03);
+  filter:brightness(1.1);
+  box-shadow:0 9px 22px rgba(0,0,0,.95);
+}
+#start-logo{
+  width:18px;height:18px;border-radius:4px;
+  background:
+    linear-gradient(90deg,#fff 0 48%,transparent 52% 100%),
+    linear-gradient(180deg,#fff 0 48%,transparent 52% 100%);
+  box-shadow:0 0 0 1px rgba(0,0,0,.14);
+}
+.taskbar-app{
+  min-width:72px;max-width:140px;height:28px;
+  padding:0 10px;border-radius:8px;
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;color:var(--text-soft);
+  background:rgba(255,255,255,.02);
+  border:1px solid transparent;
+  cursor:pointer;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  transition:background var(--anim-fast),border-color var(--anim-fast),color var(--anim-fast),transform var(--anim-fast);
+}
+.taskbar-app span.icon-dot{
+  width:9px;height:9px;border-radius:50%;
+  background:radial-gradient(circle at 30% 20%,#fff,rgba(255,255,255,.2));
+  box-shadow:0 0 0 3px rgba(43,123,255,.35);
+}
+.taskbar-app.active{
+  background:var(--accent-soft);
+  border-color:var(--accent-strong);
+  color:var(--text);
+  transform:translateY(-1px);
+}
+.taskbar-clock{
+  font-size:11px;color:var(--text-soft);
+  display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;
+}
+.taskbar-tray-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:radial-gradient(circle at 30% 20%,#fff,rgba(255,255,255,.3));
+  opacity:.6;
+}
+
+/* ========== 开始菜单 ========== */
+#start-menu{
+  position:fixed;left:8px;bottom:var(--taskbar-h);
+  width:290px;max-height:420px;
+  border-radius:14px;
+  background:var(--glass-strong);
+  border:1px solid var(--border-soft);
+  box-shadow:0 18px 45px rgba(0,0,0,.78);
+  display:none;flex-direction:column;
+  overflow:hidden;
+}
+#start-menu-header{
+  padding:10px 12px;border-bottom:1px solid var(--border-soft);
+  display:flex;align-items:center;gap:8px;
+}
+#start-menu-header-avatar{
+  width:26px;height:26px;border-radius:50%;
+  background:linear-gradient(145deg,#ffb347,#ffcc33);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;
+}
+#start-menu-search{
+  margin:8px 10px;
+  background:rgba(0,0,0,.4);border-radius:999px;
+  padding:6px 10px;font-size:11px;color:var(--text-soft);
+  display:flex;align-items:center;gap:6px;
+}
+#start-menu-search input{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--text);font-size:11px;
+}
+.start-menu-section-title{
+  font-size:11px;color:var(--text-soft);
+  padding:0 12px;margin-top:2px;margin-bottom:2px;
+}
+#start-menu-apps{
+  padding:4px 6px 8px;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+}
+.start-menu-tile{
+  border-radius:10px;
+  background:rgba(255,255,255,.03);
+  padding:10px 8px;
+  display:flex;flex-direction:column;gap:6px;cursor:pointer;
+  font-size:11px;color:var(--text-soft);
+  transition:background var(--anim-fast),transform var(--anim-fast),box-shadow var(--anim-fast),color var(--anim-fast);
+}
+.start-menu-tile:hover{
+  background:var(--accent-soft);
+  color:var(--text);
+  transform:translateY(-1px);
+  box-shadow:0 8px 22px rgba(0,0,0,.75);
+}
+.start-menu-tile-icon{
+  width:24px;height:24px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;background:linear-gradient(145deg,#2b7bff,#00d2ff);
+}
+
+/* ========== 窗口系统 ========== */
+.window{
+  position:absolute;min-width:360px;min-height:220px;
+  background:var(--glass);
+  border-radius:var(--radius-window);
+  border:1px solid var(--border-strong);
+  box-shadow:var(--shadow-window);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  backdrop-filter:blur(18px);
+  animation:window-pop var(--anim-med);
+}
+.window-header{
+  height:34px;padding:0 10px;
+  display:flex;align-items:center;justify-content:space-between;
+  cursor:grab;
+  background:linear-gradient(to right,rgba(255,255,255,.06),rgba(0,0,0,.28));
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.window-header-left{
+  display:flex;align-items:center;gap:6px;font-size:12px;
+}
+.window-header-icon{
+  width:18px;height:18px;border-radius:5px;
+  background:var(--accent-soft);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;
+}
+.window-header-title{
+  color:var(--text-soft);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.window-header-buttons{
+  display:flex;align-items:center;gap:4px;
+}
+.win-btn{
+  width:14px;height:14px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;cursor:pointer;
+  background:rgba(0,0,0,.35);
+  color:rgba(255,255,255,.8);
+  transition:background var(--anim-fast),transform var(--anim-fast),color var(--anim-fast);
+}
+.win-btn:hover{background:rgba(255,255,255,.18);transform:translateY(-1px);}
+.win-btn.close:hover{background:var(--danger);color:#fff;}
+.window-body{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.window-resize-handle{
+  position:absolute;right:4px;bottom:4px;
+  width:14px;height:14px;cursor:nwse-resize;
+  border-radius:4px;border:1px solid rgba(255,255,255,.18);
+  background:linear-gradient(135deg,rgba(255,255,255,.25),rgba(255,255,255,0));
+  opacity:.5;
+}
+
+/* ========== 通用内容样式 ========== */
+.app-toolbar{
+  height:30px;border-bottom:1px solid var(--border-soft);
+  display:flex;align-items:center;gap:4px;padding:0 8px;
+  background:rgba(0,0,0,.35);
+  font-size:11px;color:var(--text-soft);
+}
+.app-toolbar button,.pill-button{
+  border:none;border-radius:999px;
+  padding:4px 10px;
+  font-size:11px;color:var(--text-soft);
+  background:rgba(255,255,255,.04);
+  display:inline-flex;align-items:center;gap:4px;
+  cursor:pointer;
+  transition:background var(--anim-fast),color var(--anim-fast),transform var(--anim-fast),box-shadow var(--anim-fast);
+}
+.app-toolbar button:hover,.pill-button:hover{
+  background:var(--accent-soft);color:var(--text);
+  transform:translateY(-1px);
+  box-shadow:0 6px 15px rgba(0,0,0,.6);
+}
+.app-toolbar .spacer{flex:1;}
+.app-content{
+  flex:1;padding:8px;
+  overflow:auto;
+  background:radial-gradient(circle at top left,rgba(255,255,255,.04) 0,transparent 45%),radial-gradient(circle at bottom right,rgba(0,0,0,.9) 0,transparent 55%);
+}
+
+/* ========== 文本编辑器 / 代码编辑器 ========== */
+.textarea-mono{
+  width:100%;height:100%;
+  background:rgba(1,4,12,.94);
+  border-radius:8px;border:1px solid rgba(255,255,255,.08);
+  color:#f3f6ff;font-size:13px;line-height:1.5;
+  padding:10px 12px;
+  font-family:JetBrains Mono,Consolas,monospace;
+  outline:none;resize:none;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);
+}
+.textarea-mono:focus{
+  border-color:var(--accent-strong);
+  box-shadow:0 0 0 1px rgba(43,123,255,.65),0 0 25px rgba(43,123,255,.45);
+}
+
+/* 简易代码高亮视图 */
+.code-editor-container{
+  position:relative;width:100%;height:100%;
+}
+.code-editor-gutter{
+  position:absolute;left:0;top:0;bottom:0;width:42px;
+  background:rgba(0,0,0,.7);
+  border-right:1px solid rgba(255,255,255,.06);
+  font-size:11px;color:#5f6f8f;
+  padding:8px 4px;text-align:right;
+  font-family:JetBrains Mono,Consolas,monospace;
+  user-select:none;
+}
+.code-editor-textarea{
+  position:absolute;left:42px;right:0;top:0;bottom:0;
+}
+.code-highlight-keyword{color:#4ea5ff;}
+.code-highlight-string{color:#f7c76b;}
+.code-highlight-comment{color:#5c718f;font-style:italic;}
+.code-highlight-number{color:#ff9ecb;}
+
+/* ========== 终端 / Python 终端 ========== */
+.terminal-root{
+  background:radial-gradient(circle at top,rgba(0,0,0,.8) 0,rgba(0,0,0,.9) 40%,#000 100%);
+  color:#e0f3ff;
+  font-family:JetBrains Mono,Consolas,monospace;
+  font-size:12px;
+  display:flex;flex-direction:column;
+}
+.terminal-output{
+  flex:1;padding:8px 10px;overflow:auto;
+  white-space:pre-wrap;word-break:break-word;
+}
+.terminal-input-row{
+  display:flex;align-items:center;gap:6px;
+  border-top:1px solid rgba(255,255,255,.08);
+  padding:4px 8px;
+}
+.terminal-prompt{color:#6ce0ff;}
+.terminal-input{
+  flex:1;
+  background:transparent;border:none;outline:none;
+  color:#f4fdff;font-family:inherit;font-size:12px;
+}
+
+/* ========== 文件管理器 ========== */
+.file-explorer-root{display:flex;height:100%;gap:8px;}
+.file-tree{
+  width:180px;background:rgba(0,0,0,.5);border-radius:8px;
+  padding:6px 4px;overflow:auto;
+  border:1px solid var(--border-soft);
+}
+.file-tree-item{
+  padding:3px 8px;border-radius:6px;
+  display:flex;align-items:center;gap:4px;
+  font-size:11px;color:var(--text-soft);
+  cursor:pointer;
+}
+.file-tree-item span.chevron{width:12px;text-align:center;}
+.file-tree-item:hover{background:rgba(255,255,255,.05);color:var(--text);}
+.file-tree-item.active{background:var(--accent-soft);color:var(--text);}
+.file-main{
+  flex:1;display:flex;flex-direction:column;
+}
+.file-main-toolbar{margin-bottom:4px;}
+.file-grid{
+  flex:1;border-radius:8px;border:1px solid var(--border-soft);
+  background:rgba(0,0,0,.5);
+  padding:6px;display:flex;flex-wrap:wrap;gap:10px;
+  overflow:auto;font-size:11px;
+}
+.file-item{
+  width:90px;padding:8px 6px;border-radius:8px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  cursor:pointer;color:var(--text-soft);
+}
+.file-item-icon{
+  width:32px;height:32px;border-radius:10px;
+  background:linear-gradient(145deg,#4facfe,#00f2fe);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;color:#fff;
+}
+.file-item.folder .file-item-icon{
+  background:linear-gradient(145deg,#ffb347,#ffcc33);
+}
+.file-item:hover{background:rgba(255,255,255,.06);color:var(--text);}
+.file-details{
+  margin-top:6px;font-size:11px;color:var(--text-soft);
+}
+
+/* ========== 画图 ========== */
+.paint-root{
+  display:flex;flex-direction:column;height:100%;
+}
+#paint-canvas{
+  flex:1;border-radius:8px;border:1px solid var(--border-soft);
+  background:#fff;cursor:crosshair;
+}
+.paint-toolbar{
+  display:flex;align-items:center;gap:8px;
+  padding:4px 0;font-size:11px;color:var(--text-soft);
+}
+.paint-color{
+  width:18px;height:18px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.85);
+  box-shadow:0 0 0 1px rgba(0,0,0,.4);
+  cursor:pointer;
+}
+.paint-color.active{outline:2px solid var(--accent);}
+input[type="range"]{accent-color:var(--accent);}
+
+/* ========== 视频编辑器 ========== */
+.video-root{display:flex;flex-direction:column;height:100%;gap:6px;}
+.video-player{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at center,rgba(255,255,255,.04),rgba(0,0,0,.9));
+  border-radius:10px;border:1px solid var(--border-soft);
+  overflow:hidden;
+}
+.video-player video{max-width:100%;max-height:100%;background:#000;}
+.video-timeline{
+  height:70px;border-radius:10px;border:1px solid var(--border-soft);
+  background:rgba(0,0,0,.7);
+  padding:6px 8px;font-size:11px;color:var(--text-soft);
+}
+.video-timeline-row{display:flex;align-items:center;gap:8px;margin-top:4px;}
+.video-marker{
+  height:18px;border-radius:999px;
+  background:linear-gradient(90deg,#2b7bff,#42e695);
+  position:relative;flex:1;
+}
+.video-marker::after{
+  content:"";position:absolute;top:-3px;left:20%;
+  width:4px;height:24px;border-radius:3px;
+  background:#fff;
+}
+
+/* ========== 游戏中心 ========== */
+.games-root{
+  display:grid;grid-template-columns:220px 1fr;gap:8px;height:100%;
+}
+.games-sidebar{
+  border-radius:10px;border:1px solid var(--border-soft);
+  background:rgba(0,0,0,.6);padding:8px;font-size:11px;
+}
+.game-tile{
+  border-radius:8px;padding:8px;cursor:pointer;
+  margin-bottom:6px;
+  background:rgba(255,255,255,.02);
+  display:flex;align-items:center;gap:8px;
+  transition:background var(--anim-fast),transform var(--anim-fast),box-shadow var(--anim-fast);
+}
+.game-tile:hover{
+  background:rgba(255,255,255,.06);
+  transform:translateY(-1px);
+  box-shadow:0 6px 16px rgba(0,0,0,.65);
+}
+.game-tile.active{background:var(--accent-soft);}
+.game-badge{
+  width:26px;height:26px;border-radius:9px;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(145deg,#ff512f,#dd2476);
+  font-size:14px;
+}
+.games-main{
+  border-radius:10px;border:1px solid var(--border-soft);
+  background:rgba(0,0,0,.65);padding:8px;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+
+/* 贪吃蛇 */
+.snake-board{
+  flex:1;border-radius:8px;border:1px solid rgba(255,255,255,.08);
+  background:radial-gradient(circle at center,#111 0,#000 100%);
+  display:grid;grid-template-columns:repeat(20,1fr);
+  grid-template-rows:repeat(20,1fr);
+  gap:1px;padding:4px;
+}
+.snake-cell{
+  background:rgba(12,18,30,.9);border-radius:3px;
+}
+.snake-cell.snake{background:linear-gradient(145deg,#00c853,#64dd17);}
+.snake-cell.food{background:radial-gradient(circle at 30% 20%,#fff,#ff5252);}
+
+/* 2048 */
+.game-2048-board{
+  flex:1;border-radius:8px;background:#101318;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px;
+}
+.tile-2048{
+  height:60px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:bold;font-size:20px;
+  background:#181c24;color:#6f7a8c;
+}
+.tile-2048[data-v="2"]{background:#eee4da;color:#776e65;}
+.tile-2048[data-v="4"]{background:#ede0c8;color:#776e65;}
+.tile-2048[data-v="8"]{background:#f2b179;color:#f9f6f2;}
+.tile-2048[data-v="16"]{background:#f59563;color:#f9f6f2;}
+.tile-2048[data-v="32"]{background:#f67c5f;color:#f9f6f2;}
+.tile-2048[data-v="64"]{background:#f65e3b;color:#f9f6f2;}
+.tile-2048[data-v="128"]{background:#edcf72;color:#f9f6f2;}
+.tile-2048[data-v="256"]{background:#edcc61;color:#f9f6f2;}
+.tile-2048[data-v="512"]{background:#edc850;color:#f9f6f2;}
+.tile-2048[data-v="1024"]{background:#edc53f;color:#f9f6f2;}
+.tile-2048[data-v="2048"]{background:#edc22e;color:#f9f6f2;}
+
+/* ========== 设置中心 ========== */
+.settings-root{display:flex;gap:10px;height:100%;}
+.settings-sidebar{
+  width:160px;border-radius:10px;border:1px solid var(--border-soft);
+  background:rgba(0,0,0,.6);padding:8px;font-size:11px;
+}
+.settings-item{
+  padding:6px 8px;border-radius:8px;cursor:pointer;
+  display:flex;align-items:center;gap:8px;color:var(--text-soft);
+}
+.settings-item:hover{background:rgba(255,255,255,.06);}
+.settings-item.active{background:var(--accent-soft);color:var(--text);}
+.settings-main{
+  flex:1;border-radius:10px;border:1px solid var(--border-soft);
+  background:rgba(0,0,0,.7);padding:8px;font-size:11px;
+}
+.toggle{
+  width:32px;height:18px;border-radius:999px;
+  background:rgba(255,255,255,.15);
+  position:relative;cursor:pointer;
+}
+.toggle::after{
+  content:"";position:absolute;top:2px;left:2px;
+  width:14px;height:14px;border-radius:50%;
+  background:#fff;transition:transform var(--anim-fast),background var(--anim-fast);
+}
+.toggle.on{background:var(--accent-strong);}
+.toggle.on::after{transform:translateX(14px);}
+
+/* ========== 通知 / 小组件 ========== */
+#notification-area{
+  position:fixed;right:10px;top:10px;
+  display:flex;flex-direction:column;gap:6px;z-index:9999;
+}
+.toast{
+  min-width:210px;
+  background:rgba(12,18,30,.9);
+  border-radius:10px;border:1px solid rgba(255,255,255,.1);
+  padding:8px 10px;font-size:11px;color:var(--text-soft);
+  box-shadow:0 10px 25px rgba(0,0,0,.75);
+  display:flex;gap:6px;
+  animation:toast-in .18s ease-out;
+}
+.toast-icon{
+  width:18px;height:18px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--accent-soft);
+}
+.toast strong{display:block;color:var(--text);margin-bottom:2px;}
+.toast-close{margin-left:auto;cursor:pointer;opacity:.6;}
+.toast-close:hover{opacity:1;}
+
+/* ========== 窗口动画 ========== */
+@keyframes window-pop{
+  from{opacity:0;transform:scale(.92) translateY(14px);}
+  to{opacity:1;transform:scale(1) translateY(0);}
+}
+@keyframes toast-in{
+  from{opacity:0;transform:translateY(-8px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* ========== 自适应 ========== */
+@media(max-width:800px){
+  .window{min-width:320px;min-height:210px;}
+  #desktop{padding:10px 6px var(--taskbar-h);}
+  .games-root{grid-template-columns:1fr;}
+  .games-sidebar{display:flex;flex-direction:row;overflow:auto;white-space:nowrap;}
+  .game-tile{min-width:150px;margin-right:8px;}
+}
+</style>
+</head>
+<body>
+<div id="desktop"></div>
+<div id="taskbar">
+  <div id="taskbar-left">
+    <div id="start-button" title="开始">
+      <div id="start-logo"></div>
+    </div>
+  </div>
+  <div id="taskbar-center"></div>
+  <div id="taskbar-right">
+    <div class="taskbar-tray-dot"></div>
+    <div class="taskbar-tray-dot"></div>
+    <div class="taskbar-tray-dot"></div>
+    <div class="taskbar-clock">
+      <span id="clock-time">--:--</span>
+      <span id="clock-date">0000-00-00</span>
+    </div>
+  </div>
+</div>
+
+<div id="start-menu">
+  <div id="start-menu-header">
+    <div id="start-menu-header-avatar">A</div>
+    <div>
+      <div style="font-size:12px;">WebOS A</div>
+      <div style="font-size:10px;color:var(--text-soft);">超迷你 Web Windows</div>
+    </div>
+  </div>
+  <div id="start-menu-search">
+    <span style="opacity:.6;">🔍</span>
+    <input id="start-search-input" placeholder="搜索应用、文件、设置..." />
+  </div>
+  <div class="start-menu-section-title">置顶应用</div>
+  <div id="start-menu-apps"></div>
+  <div class="start-menu-section-title">小贴士</div>
+  <div style="padding:4px 12px 10px;font-size:10px;color:var(--text-soft);">
+    这是一个完全运行在浏览器里的「迷你操作系统」，<br>
+    所有应用都内嵌在同一个 HTML 文件中。
+  </div>
+</div>
+
+<div id="notification-area"></div>
+
+<script>
+/* =========================================================
+   WebOS A 内核
+   ========================================================= */
+
+const WebOS = (() => {
+  const appDefinitions = [
+    { id:'notepad', name:'记事本', icon:'📝', onDesktop:true, startPinned:true },
+    { id:'code', name:'代码编辑器', icon:'</>', onDesktop:true, startPinned:true },
+    { id:'terminal', name:'终端', icon:'⌨️', onDesktop:true, startPinned:true },
+    { id:'python', name:'Python 终端', icon:'🐍', onDesktop:true, startPinned:true },
+    { id:'files', name:'文件管理器', icon:'📁', onDesktop:true, startPinned:true },
+    { id:'paint', name:'画图', icon:'🎨', onDesktop:true, startPinned:true },
+    { id:'video', name:'视频编辑器', icon:'🎬', onDesktop:false, startPinned:true },
+    { id:'games', name:'游戏中心', icon:'🎮', onDesktop:true, startPinned:true },
+    { id:'settings', name:'设置', icon:'⚙️', onDesktop:true, startPinned:true },
+  ];
+
+  let zCounter = 10;
+  const windows = new Map(); // id -> {el, appId}
+
+  const storageKeyFS = 'WebOS_A_FS_v1';
+  const storageKeySettings = 'WebOS_A_SETTINGS_v1';
+
+  const defaultFS = {
+    type:'folder', name:'根目录', path:'/', children:[
+      { type:'folder', name:'文档', path:'/文档', children:[
+        { type:'file', name:'欢迎使用.txt', path:'/文档/欢迎使用.txt', content:
+`欢迎来到 WebOS A！
+
+这是一个完全运行在浏览器中的「袖珍操作系统」，
+你可以像在 Windows 中那样打开各种小应用：
+
+- 记事本：写点灵感
+- 代码编辑器：写几行 JS 或伪代码
+- 终端：体验小小 Shell
+- Python 终端：玩玩极简 Python 解释器
+- 文件管理器：浏览这个虚拟文件系统
+- 画图：随手涂鸦
+- 游戏中心：贪吃蛇、2048
+- 视频编辑器：假装自己在剪片 😂
+
+提示：
+- 窗口可以拖动、缩放，双击标题栏可最大化/还原
+- 右下角小三角可以调整窗口大小
+- 大部分状态会存到 localStorage，下次打开还能继续玩
+
+祝玩得开心！`,
+        },
+      ]},
+      { type:'folder', name:'图片', path:'/图片', children:[] },
+      { type:'folder', name:'视频', path:'/视频', children:[] },
+      { type:'folder', name:'桌面', path:'/桌面', children:[] },
+    ]
+  };
+
+  let fsRoot = loadFS();
+  let settings = loadSettings();
+
+  function saveFS(){ localStorage.setItem(storageKeyFS, JSON.stringify(fsRoot)); }
+  function loadFS(){
+    try{
+      const raw = localStorage.getItem(storageKeyFS);
+      if(!raw) return JSON.parse(JSON.stringify(defaultFS));
+      return JSON.parse(raw);
+    }catch(e){ return JSON.parse(JSON.stringify(defaultFS)); }
+  }
+  function saveSettings(){
+    localStorage.setItem(storageKeySettings, JSON.stringify(settings));
+  }
+  function loadSettings(){
+    try{
+      const raw = localStorage.getItem(storageKeySettings);
+      if(!raw) return {
+        theme:'dark',
+        wallpaper:'default',
+        sounds:true,
+        animations:true,
+      };
+      return JSON.parse(raw);
+    }catch(e){
+      return {theme:'dark',wallpaper:'default',sounds:true,animations:true};
+    }
+  }
+
+  // ---- 文件系统工具 ----
+  function findNode(path){
+    if(path === '/' || !path) return fsRoot;
+    const parts = path.split('/').filter(Boolean);
+    let cur = fsRoot;
+    for(const p of parts){
+      if(!cur.children) return null;
+      cur = cur.children.find(c => c.name === p);
+      if(!cur) return null;
+    }
+    return cur;
+  }
+  function listDir(path){
+    const node = findNode(path);
+    if(!node || node.type !== 'folder') return [];
+    return node.children || [];
+  }
+  function ensureFolder(path){
+    if(path === '/') return fsRoot;
+    const parts = path.split('/').filter(Boolean);
+    let cur = fsRoot;
+    for(const p of parts){
+      let child = (cur.children||[]).find(c => c.type==='folder' && c.name===p);
+      if(!child){
+        child = {type:'folder',name:p,path:(cur.path==='/'?'/'+p:cur.path+'/'+p),children:[]};
+        cur.children.push(child);
+      }
+      cur = child;
+    }
+    return cur;
+  }
+  function writeFile(path, content){
+    const segments = path.split('/').filter(Boolean);
+    const fileName = segments.pop();
+    const dirPath = '/' + segments.join('/');
+    const folder = ensureFolder(dirPath === '//' ? '/' : dirPath);
+    let file = (folder.children||[]).find(c => c.type==='file' && c.name===fileName);
+    if(!file){
+      file = {type:'file',name:fileName,path:(folder.path==='/'?'/'+fileName:folder.path+'/'+fileName),content:''};
+      folder.children.push(file);
+    }
+    file.content = content;
+    saveFS();
+    return file;
+  }
+  function readFile(path){
+    const node = findNode(path);
+    if(node && node.type==='file') return node.content || '';
+    return null;
+  }
+  function createFolder(path){
+    const segments = path.split('/').filter(Boolean);
+    const name = segments.pop();
+    const dirPath = '/' + segments.join('/');
+    const folder = ensureFolder(dirPath === '//' ? '/' : dirPath);
+    if((folder.children||[]).some(c => c.name===name)) return false;
+    const node = {type:'folder',name,path:(folder.path==='/'?'/'+name:folder.path+'/'+name),children:[]};
+    folder.children.push(node);
+    saveFS();
+    return true;
+  }
+
+  // ---- 通知 ----
+  function toast(title, msg, icon='✨', timeout=3500){
+    const area = document.getElementById('notification-area');
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = `
+      <div class="toast-icon">${icon}</div>
+      <div>
+        <strong>${title}</strong>
+        <div>${msg}</div>
+      </div>
+      <div class="toast-close">✕</div>
+    `;
+    area.appendChild(el);
+    const close = ()=>{ if(el.parentNode) el.parentNode.removeChild(el); };
+    el.querySelector('.toast-close').onclick = close;
+    setTimeout(close, timeout);
+  }
+
+  // ---- 窗口管理 ----
+  function createWindow(appId, options={}){
+    const def = appDefinitions.find(a=>a.id===appId);
+    if(!def) return;
+    const id = options.instanceId || `${appId}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    const win = document.createElement('div');
+    win.className = 'window';
+    win.dataset.winId = id;
+    win.dataset.appId = appId;
+    win.style.left = (80 + Math.random()*120) + 'px';
+    win.style.top = (50 + Math.random()*80) + 'px';
+    win.style.width = (options.width || 520) + 'px';
+    win.style.height = (options.height || 340) + 'px';
+    win.style.zIndex = ++zCounter;
+
+    win.innerHTML = `
+      <div class="window-header">
+        <div class="window-header-left">
+          <div class="window-header-icon">${def.icon || '🪟'}</div>
+          <div class="window-header-title">${def.name}</div>
+        </div>
+        <div class="window-header-buttons">
+          <div class="win-btn minimize" title="最小化">—</div>
+          <div class="win-btn maximize" title="最大化">▢</div>
+          <div class="win-btn close" title="关闭">✕</div>
+        </div>
+      </div>
+      <div class="window-body"></div>
+      <div class="window-resize-handle"></div>
+    `;
+    document.body.appendChild(win);
+
+    const body = win.querySelector('.window-body');
+    buildAppUI(appId, {windowEl:win, body, instanceId:id});
+
+    attachWindowBehavior(win);
+    windows.set(id, {el:win, appId});
+    ensureTaskbarButton(appId, id, def);
+
+    focusWindow(win);
+    return win;
+  }
+
+  function attachWindowBehavior(win){
+    const header = win.querySelector('.window-header');
+    const resize = win.querySelector('.window-resize-handle');
+    let isDragging=false, dragOffsetX=0, dragOffsetY=0;
+    let isResizing=false, startW=0,startH=0,startX=0,startY=0;
+    let isMaximized=false;
+    let prevRect=null;
+
+    header.addEventListener('mousedown', e=>{
+      if(e.target.closest('.win-btn')) return;
+      isDragging=true;
+      dragOffsetX = e.clientX - win.offsetLeft;
+      dragOffsetY = e.clientY - win.offsetTop;
+      header.style.cursor='grabbing';
+      focusWindow(win);
+    });
+    document.addEventListener('mousemove', e=>{
+      if(isDragging){
+        win.style.left = (e.clientX - dragOffsetX)+'px';
+        win.style.top = (e.clientY - dragOffsetY)+'px';
+      }
+      if(isResizing){
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        win.style.width = Math.max(340, startW + dx)+'px';
+        win.style.height = Math.max(220, startH + dy)+'px';
+      }
+    });
+    document.addEventListener('mouseup', ()=>{
+      isDragging=false;
+      isResizing=false;
+      header.style.cursor='grab';
+    });
+
+    resize.addEventListener('mousedown', e=>{
+      isResizing=true;
+      startW = win.offsetWidth;
+      startH = win.offsetHeight;
+      startX = e.clientX;
+      startY = e.clientY;
+      e.stopPropagation();
+    });
+
+    // 窗口按钮
+    win.querySelector('.win-btn.close').onclick = ()=>{
+      const id = win.dataset.winId;
+      const tbtn = document.querySelector(`.taskbar-app[data-win-id="${id}"]`);
+      if(tbtn && tbtn.parentNode) tbtn.parentNode.removeChild(tbtn);
+      windows.delete(id);
+      if(win.parentNode) win.parentNode.removeChild(win);
+    };
+    win.querySelector('.win-btn.minimize').onclick = ()=>{
+      win.style.display='none';
+      const id = win.dataset.winId;
+      const tbtn = document.querySelector(`.taskbar-app[data-win-id="${id}"]`);
+      if(tbtn) tbtn.classList.remove('active');
+    };
+    win.querySelector('.win-btn.maximize').onclick = ()=>{
+      if(!isMaximized){
+        prevRect = {left:win.offsetLeft, top:win.offsetTop, width:win.offsetWidth, height:win.offsetHeight};
+        win.style.left='0';win.style.top='0';
+        win.style.width=window.innerWidth+'px';
+        win.style.height=(window.innerHeight-parseInt(getComputedStyle(document.documentElement).getPropertyValue('--taskbar-h')))+'px';
+        isMaximized=true;
+      }else{
+        if(prevRect){
+          win.style.left=prevRect.left+'px';
+          win.style.top=prevRect.top+'px';
+          win.style.width=prevRect.width+'px';
+          win.style.height=prevRect.height+'px';
+        }
+        isMaximized=false;
+      }
+    };
+
+    win.addEventListener('mousedown', ()=>focusWindow(win));
+    header.addEventListener('dblclick', ()=>win.querySelector('.win-btn.maximize').click());
+  }
+
+  function focusWindow(win){
+    for(const w of windows.values()){
+      if(w.el===win) w.el.classList.add('active-win');
+      else w.el.classList.remove('active-win');
+    }
+    win.style.zIndex = ++zCounter;
+    const id = win.dataset.winId;
+    const tbtn = document.querySelector(`.taskbar-app[data-win-id="${id}"]`);
+    document.querySelectorAll('.taskbar-app').forEach(b=>b.classList.remove('active'));
+    if(tbtn){
+      tbtn.classList.add('active');
+      if(win.style.display==='none') win.style.display='';
+    }
+  }
+
+  function ensureTaskbarButton(appId, winId, def){
+    const center = document.getElementById('taskbar-center');
+    const existing = center.querySelector(`.taskbar-app[data-win-id="${winId}"]`);
+    if(existing) return existing;
+    const btn = document.createElement('div');
+    btn.className = 'taskbar-app active';
+    btn.dataset.winId = winId;
+    btn.dataset.appId = appId;
+    btn.innerHTML = `<span class="icon-dot"></span><span>${def.name}</span>`;
+    btn.onclick = ()=>{
+      const winEntry = windows.get(winId);
+      if(!winEntry) return;
+      const w = winEntry.el;
+      if(w.style.display==='none'){
+        w.style.display='';
+        focusWindow(w);
+      }else{
+        // 切换最小化
+        w.style.display='none';
+        btn.classList.remove('active');
+      }
+    };
+    center.appendChild(btn);
+    return btn;
+  }
+
+  // ---- 应用注册 ----
+  function buildAppUI(appId, ctx){
+    if(appId==='notepad') buildNotepad(ctx);
+    else if(appId==='code') buildCodeEditor(ctx);
+    else if(appId==='terminal') buildShellTerminal(ctx);
+    else if(appId==='python') buildPythonTerminal(ctx);
+    else if(appId==='files') buildFileExplorer(ctx);
+    else if(appId==='paint') buildPaint(ctx);
+    else if(appId==='video') buildVideoEditor(ctx);
+    else if(appId==='games') buildGamesCenter(ctx);
+    else if(appId==='settings') buildSettingsCenter(ctx);
+    else{
+      ctx.body.innerHTML = `<div class="app-content">未知应用：${appId}</div>`;
+    }
+  }
+
+  /* =========================================================
+     应用：记事本
+     ========================================================= */
+  function buildNotepad({body}){
+    body.innerHTML = `
+      <div class="app-toolbar">
+        <button data-cmd="new">新建</button>
+        <button data-cmd="open">从「文档」打开</button>
+        <button data-cmd="save">保存到「文档」</button>
+        <span class="spacer"></span>
+        <span style="font-size:10px;color:var(--text-soft);">简易记事本 · WebOS A</span>
+      </div>
+      <div class="app-content">
+        <textarea class="textarea-mono" id="notepad-text"></textarea>
+      </div>
+    `;
+    const ta = body.querySelector('#notepad-text');
+    ta.value = '在这里写点什么吧……\n\n这是 WebOS A 的简易记事本。';
+
+    body.querySelectorAll('.app-toolbar button').forEach(btn=>{
+      btn.onclick = ()=>{
+        const cmd = btn.dataset.cmd;
+        if(cmd==='new'){
+          if(confirm('清空当前内容？')) ta.value='';
+        }else if(cmd==='open'){
+          const path = prompt('输入要打开的文件路径（例如 /文档/欢迎使用.txt）：','/文档/欢迎使用.txt');
+          if(!path) return;
+          const content = readFile(path);
+          if(content==null) toast('打开失败','文件不存在：'+path,'📄');
+          else{
+            ta.value = content;
+            toast('已打开',path,'📄');
+          }
+        }else if(cmd==='save'){
+          const path = prompt('保存到哪个路径？（例如 /文档/我的笔记.txt）','/文档/我的笔记.txt');
+          if(!path) return;
+          writeFile(path, ta.value);
+          toast('已保存',path,'💾');
+        }
+      };
+    });
+  }
+
+  /* =========================================================
+     应用：代码编辑器
+     ========================================================= */
+  function buildCodeEditor({body}){
+    body.innerHTML = `
+      <div class="app-toolbar">
+        <button data-cmd="sample">加载示例</button>
+        <button data-cmd="run">在终端中运行 JS</button>
+        <span class="spacer"></span>
+        <span style="font-size:10px;color:var(--text-soft);">带行号与简易高亮</span>
+      </div>
+      <div class="app-content" style="padding:6px;">
+        <div class="code-editor-container">
+          <div class="code-editor-gutter" id="code-gutter"></div>
+          <textarea class="textarea-mono code-editor-textarea" id="code-editor"></textarea>
+        </div>
+      </div>
+    `;
+    const ta = body.querySelector('#code-editor');
+    const gutter = body.querySelector('#code-gutter');
+
+    const sampleCode = `// WebOS A 代码编辑器示例
+function greet(name){
+  const now = new Date().toLocaleTimeString();
+  console.log(\`[WebOS A] \${now} -> 你好, \${name}!\`);
+}
+greet('世界');`;
+
+    ta.value = sampleCode;
+    refreshGutter();
+    ta.addEventListener('input', refreshGutter);
+    ta.addEventListener('scroll', ()=>{ gutter.scrollTop = ta.scrollTop; });
+
+    function refreshGutter(){
+      const lines = ta.value.split('\n').length;
+      let html='';
+      for(let i=1;i<=lines;i++){
+        html += i + '<br>';
+      }
+      gutter.innerHTML = html;
+    }
+
+    body.querySelectorAll('.app-toolbar button').forEach(btn=>{
+      btn.onclick = ()=>{
+        const cmd = btn.dataset.cmd;
+        if(cmd==='sample'){
+          ta.value = sampleCode;
+          refreshGutter();
+        }else if(cmd==='run'){
+          try{
+            const result = eval(ta.value);
+            console.log('[WebOS A · 代码编辑器] 运行结果:',result);
+            toast('执行成功','输出已打印到浏览器控制台','▶️');
+          }catch(e){
+            toast('执行异常', e.message || String(e),'⚠️');
+          }
+        }
+      };
+    });
+  }
+
+  /* =========================================================
+     应用：Shell 终端（虚拟文件系统）
+     ========================================================= */
+  function buildShellTerminal({body}){
+    body.innerHTML = `
+      <div class="app-toolbar">
+        <span style="font-size:11px;">WebShell v0.1</span>
+        <span class="spacer"></span>
+        <button data-cmd="clear">清屏</button>
+      </div>
+      <div class="terminal-root">
+        <div class="terminal-output" id="shell-out"></div>
+        <div class="terminal-input-row">
+          <span class="terminal-prompt" id="shell-prompt"></span>
+          <input class="terminal-input" id="shell-input" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+    `;
+    const out = body.querySelector('#shell-out');
+    const input = body.querySelector('#shell-input');
+    const promptEl = body.querySelector('#shell-prompt');
+    let cwd = '/';
+
+    function updatePrompt(){
+      promptEl.textContent = `webos@A:${cwd}$`;
+    }
+    updatePrompt();
+
+    function println(text=''){
+      out.innerText += text + '\n';
+      out.scrollTop = out.scrollHeight;
+    }
+
+    println('欢迎来到 WebShell A');
+    println('支持命令：ls, cd, pwd, cat, echo, mkdir, help, clear');
+    println('');
+
+    body.querySelector('[data-cmd="clear"]').onclick = ()=>{ out.innerText=''; };
+
+    input.addEventListener('keydown', e=>{
+      if(e.key === 'Enter'){
+        const cmdline = input.value.trim();
+        println(promptEl.textContent + ' ' + cmdline);
+        handleCommand(cmdline);
+        input.value='';
+      }
+    });
+    setTimeout(()=>input.focus(),100);
+
+    function handleCommand(line){
+      if(!line){ println(); return; }
+      const parts = line.split(' ').filter(Boolean);
+      const cmd = parts[0];
+      const args = parts.slice(1);
+      switch(cmd){
+        case 'help':
+          println('ls, cd, pwd, cat <path>, echo <text>, mkdir <path>, clear');
+          break;
+        case 'pwd':
+          println(cwd);
+          break;
+        case 'ls':{
+          const target = args[0] ? resolvePath(args[0]) : cwd;
+          const list = listDir(target);
+          if(!list){ println('路径不存在或不是目录'); break; }
+          const names = list.map(n=>n.type==='folder'? n.name+'/':n.name);
+          println(names.join('  '));
+          break;
+        }
+        case 'cd':{
+          const p = args[0] ? resolvePath(args[0]) : '/';
+          const node = findNode(p);
+          if(!node || node.type!=='folder'){ println('找不到目录：'+p); }
+          else{ cwd = p; updatePrompt(); }
+          break;
+        }
+        case 'cat':{
+          if(!args[0]){ println('用法：cat <文件路径>'); break; }
+          const p = resolvePath(args[0]);
+          const content = readFile(p);
+          if(content==null) println('文件不存在：'+p);
+          else println(content);
+          break;
+        }
+        case 'echo':{
+          const txt = args.join(' ');
+          println(txt);
+          break;
+        }
+        case 'mkdir':{
+          if(!args[0]){ println('用法：mkdir <目录路径>'); break; }
+          const p = resolvePath(args[0]);
+          const ok = createFolder(p);
+          println(ok?'已创建 '+p:'创建失败：可能已存在');
+          break;
+        }
+        case 'clear':
+          out.innerText='';break;
+        default:
+          println('未知命令：'+cmd+' （输入 help 获取帮助）');
+      }
+    }
+
+    function resolvePath(p){
+      if(!p) return cwd;
+      if(p.startsWith('/')) return p;
+      if(cwd==='/') return '/'+p;
+      return cwd + '/' + p;
+    }
+  }
+
+  /* =========================================================
+     应用：Python 终端（极简解释器）
+     ========================================================= */
+  function buildPythonTerminal({body}){
+    body.innerHTML = `
+      <div class="app-toolbar">
+        <span style="font-size:11px;">MiniPy v0.1 （玩具级）</span>
+        <span class="spacer"></span>
+        <button data-cmd="clear">清屏</button>
+        <button data-cmd="sample">示例脚本</button>
+      </div>
+      <div class="terminal-root">
+        <div class="terminal-output" id="py-out"></div>
+        <div class="terminal-input-row">
+          <span class="terminal-prompt">>>> </span>
+          <input class="terminal-input" id="py-input" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+    `;
+    const out = body.querySelector('#py-out');
+    const input = body.querySelector('#py-input');
+
+    const env = {};
+
+    function println(t=''){
+      out.innerText += t+'\n';
+      out.scrollTop = out.scrollHeight;
+    }
+
+    println('欢迎来到 MiniPy v0.1');
+    println('这只是一个极简的玩具解释器，支持：');
+    println('- print(expr)');
+    println('- 变量赋值：x = 1 + 2 * 3');
+    println('- if/while/def 等仅做简单结构演示（不完整）');
+    println('');
+
+    body.querySelector('[data-cmd="clear"]').onclick = ()=>{ out.innerText=''; };
+    body.querySelector('[data-cmd="sample"]').onclick = ()=>{
+      const sample = [
+        'x = 1 + 2 * 3',
+        'print(x)',
+        'y = x * 10',
+        'print("y =", y)'
+      ];
+      sample.forEach(line=>{
+        println('>>> '+line);
+        execLine(line);
+      });
+    };
+
+    input.addEventListener('keydown', e=>{
+      if(e.key==='Enter'){
+        const line = input.value;
+        println('>>> '+line);
+        execLine(line);
+        input.value='';
+      }
+    });
+    setTimeout(()=>input.focus(),120);
+
+    function execLine(code){
+      if(!code.trim()) return;
+      try{
+        // 极简：只支持一行表达式 or 赋值：var = expr
+        if(/^\s*\w+\s*=/.test(code)){
+          const [lhs, rhs] = code.split('=');
+          const name = lhs.trim();
+          const value = evalExpr(rhs.trim());
+          env[name] = value;
+        }else if(/^print\s*\(/.test(code)){
+          const inner = code.replace(/^print\s*\(/,'').replace(/\)\s*$/,'');
+          const value = evalExpr(inner);
+          println(String(value));
+        }else{
+          const value = evalExpr(code);
+          if(value!==undefined) println(String(value));
+        }
+      }catch(e){
+        println('错误：'+(e.message || String(e)));
+      }
+    }
+
+    function evalExpr(expr){
+      // 用 JS 来当评估器：把 env 挂到作用域
+      const keys = Object.keys(env);
+      const vals = keys.map(k=>env[k]);
+      // 简单替换 Python 的 True/False/None
+      const jsExpr = expr.replace(/\bTrue\b/g,'true').replace(/\bFalse\b/g,'false').replace(/\bNone\b/g,'null');
+      const fn = new Function(...keys, 'return ('+jsExpr+');');
+      return fn(...vals);
+    }
+  }
+
+  /* =========================================================
+     应用：文件管理器
+     ========================================================= */
+  function buildFileExplorer({body}){
+    body.innerHTML = `
+      <div class="app-toolbar file-main-toolbar">
+        <button data-cmd="new-folder">新建文件夹</button>
+        <button data-cmd="new-file">新建文本文件</button>
+        <span class="spacer"></span>
+        <span style="font-size:10px;color:var(--text-soft);" id="file-path-label">/</span>
+      </div>
+      <div class="app-content" style="padding:0 6px 6px 6px;">
+        <div class="file-explorer-root">
+          <div class="file-tree" id="file-tree"></div>
+          <div class="file-main">
+            <div class="file-grid" id="file-grid"></div>
+            <div class="file-details" id="file-details">双击文件即可用合适的应用打开。</div>
+          </div>
+        </div>
+      </div>
+    `;
+    const tree = body.querySelector('#file-tree');
+    const grid = body.querySelector('#file-grid');
+    const details = body.querySelector('#file-details');
+    const label = body.querySelector('#file-path-label');
+
+    let currentPath = '/';
+    let selectedItem = null;
+
+    function renderTree(){
+      tree.innerHTML = '';
+      function renderNode(node, depth){
+        if(node.type!=='folder') return;
+        const item = document.createElement('div');
+        item.className = 'file-tree-item';
+        item.dataset.path = node.path;
+        if(node.path===currentPath) item.classList.add('active');
+        const hasChildren = (node.children||[]).some(c=>c.type==='folder');
+        item.innerHTML = `<span class="chevron">${hasChildren?'▸':''}</span><span>${depth===0?'💻':'📁'} ${node.name}</span>`;
+        item.onclick = ()=>{ currentPath=node.path; renderAll(); };
+        tree.appendChild(item);
+        (node.children||[]).filter(c=>c.type==='folder').forEach(child=>renderNode(child, depth+1));
+      }
+      renderNode(fsRoot,0);
+    }
+
+    function renderGrid(){
+      grid.innerHTML = '';
+      const list = listDir(currentPath) || [];
+      list.forEach(node=>{
+        const el = document.createElement('div');
+        el.className = 'file-item '+(node.type==='folder'?'folder':'file');
+        el.dataset.path = node.path;
+        el.innerHTML = `
+          <div class="file-item-icon">${node.type==='folder'?'📁':'📄'}</div>
+          <div style="text-align:center;">${node.name}</div>
+        `;
+        el.onclick = ()=>{
+          selectedItem = node;
+          details.textContent = (node.type==='folder'?'文件夹':'文件')+' · '+node.path;
+        };
+        el.ondblclick = ()=>{
+          if(node.type==='folder'){ currentPath=node.path; renderAll(); }
+          else openFile(node);
+        };
+        grid.appendChild(el);
+      });
+      label.textContent = currentPath;
+    }
+
+    function openFile(node){
+      if(node.type!=='file') return;
+      const ext = (node.name.split('.').pop()||'').toLowerCase();
+      if(ext==='txt' || !ext){
+        createWindow('notepad');
+        setTimeout(()=>{
+          const ta = document.querySelector('.window[data-app-id="notepad"] textarea#notepad-text');
+          if(ta) ta.value = node.content || '';
+        },30);
+      }else if(ext==='js'){
+        createWindow('code');
+        setTimeout(()=>{
+          const ta = document.querySelector('.window[data-app-id="code"] textarea#code-editor');
+          if(ta) ta.value = node.content || '';
+        },30);
+      }else if(ext==='png' || ext==='jpg' || ext==='jpeg' || ext==='gif'){
+        toast('暂未实现图片预览','你可以在画图中自己创作图片','🖼️');
+      }else{
+        toast('未知文件类型','暂时没有关联应用：'+node.name,'📄');
+      }
+    }
+
+    function renderAll(){
+      renderTree();
+      renderGrid();
+    }
+    renderAll();
+
+    body.querySelector('[data-cmd="new-folder"]').onclick = ()=>{
+      const name = prompt('新文件夹名称：','新建文件夹');
+      if(!name) return;
+      const p = (currentPath==='/'?'/'+name:currentPath+'/'+name);
+      const ok = createFolder(p);
+      if(!ok) toast('创建失败','可能已存在同名文件夹','⚠️');
+      renderAll();
+    };
+    body.querySelector('[data-cmd="new-file"]').onclick = ()=>{
+      const name = prompt('新文本文件名称：','新建文本.txt');
+      if(!name) return;
+      const p = (currentPath==='/'?'/'+name:currentPath+'/'+name);
+      writeFile(p,'');
+      renderAll();
+    };
+  }
+
+  /* =========================================================
+     应用：画图
+     ========================================================= */
+  function buildPaint({body}){
+    body.innerHTML = `
+      <div class="app-toolbar paint-toolbar">
+        <div>画笔颜色：</div>
+        <div id="paint-colors"></div>
+        <div style="margin-left:8px;">粗细：</div>
+        <input id="paint-size" type="range" min="1" max="24" value="4">
+        <span class="spacer"></span>
+        <button data-cmd="eraser">橡皮擦</button>
+        <button data-cmd="clear">清空画布</button>
+        <button data-cmd="export">导出 PNG</button>
+      </div>
+      <div class="app-content paint-root" style="padding:4px 0 0 0;">
+        <canvas id="paint-canvas"></canvas>
+      </div>
+    `;
+    const colors = ['#000000','#ffffff','#ff4757','#ffa502','#fffa65','#2ed573','#1e90ff','#3742fa','#a55eea','#ff6b81'];
+    const colorContainer = body.querySelector('#paint-colors');
+    colors.forEach(c=>{
+      const d = document.createElement('div');
+      d.className='paint-color';
+      d.style.background=c;
+      d.dataset.color=c;
+      colorContainer.appendChild(d);
+    });
+    colorContainer.firstChild.classList.add('active');
+
+    const canvas = body.querySelector('#paint-canvas');
+    const ctx2d = canvas.getContext('2d');
+    let drawing=false;
+    let currentColor = colors[0];
+    let brushSize = 4;
+    let lastX=0,lastY=0;
+
+    function resizeCanvas(){
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = rect.width * ratio;
+      canvas.height = (rect.height-4) * ratio;
+      canvas.style.width = rect.width+'px';
+      canvas.style.height = (rect.height-4)+'px';
+      ctx2d.scale(ratio,ratio);
+      ctx2d.fillStyle='#ffffff';
+      ctx2d.fillRect(0,0,rect.width,rect.height-4);
+    }
+    setTimeout(resizeCanvas,50);
+    window.addEventListener('resize', ()=>setTimeout(resizeCanvas,80));
+
+    function pos(evt){
+      const rect = canvas.getBoundingClientRect();
+      const x = (evt.clientX || (evt.touches&&evt.touches[0].clientX)) - rect.left;
+      const y = (evt.clientY || (evt.touches&&evt.touches[0].clientY)) - rect.top;
+      return {x,y};
+    }
+
+    function startDraw(e){
+      drawing=true;
+      const p = pos(e);
+      lastX = p.x; lastY = p.y;
+    }
+    function moveDraw(e){
+      if(!drawing) return;
+      const p = pos(e);
+      ctx2d.strokeStyle = currentColor;
+      ctx2d.lineWidth = brushSize;
+      ctx2d.lineCap='round';
+      ctx2d.beginPath();
+      ctx2d.moveTo(lastX,lastY);
+      ctx2d.lineTo(p.x,p.y);
+      ctx2d.stroke();
+      lastX=p.x;lastY=p.y;
+    }
+    function endDraw(){ drawing=false; }
+
+    canvas.addEventListener('mousedown',startDraw);
+    canvas.addEventListener('mousemove',moveDraw);
+    canvas.addEventListener('mouseup',endDraw);
+    canvas.addEventListener('mouseleave',endDraw);
+    canvas.addEventListener('touchstart',e=>{e.preventDefault();startDraw(e);});
+    canvas.addEventListener('touchmove',e=>{e.preventDefault();moveDraw(e);});
+    canvas.addEventListener('touchend',endDraw);
+
+    colorContainer.querySelectorAll('.paint-color').forEach(el=>{
+      el.onclick=()=>{
+        colorContainer.querySelectorAll('.paint-color').forEach(e=>e.classList.remove('active'));
+        el.classList.add('active');
+        currentColor = el.dataset.color;
+      };
+    });
+    body.querySelector('#paint-size').oninput = e=>{ brushSize = +e.target.value; };
+
+    body.querySelector('[data-cmd="eraser"]').onclick = ()=>{
+      currentColor = '#ffffff';
+      colorContainer.querySelectorAll('.paint-color').forEach(e=>e.classList.remove('active'));
+    };
+    body.querySelector('[data-cmd="clear"]').onclick = ()=>{
+      const rect = canvas.getBoundingClientRect();
+      ctx2d.fillStyle='#ffffff';
+      ctx2d.fillRect(0,0,rect.width,rect.height);
+    };
+    body.querySelector('[data-cmd="export"]').onclick = ()=>{
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href=url;
+      a.download='webos-paint.png';
+      a.click();
+      toast('已导出','图片已下载为 webos-paint.png','🖼️');
+    };
+  }
+
+  /* =========================================================
+     应用：视频编辑器（伪剪辑）
+     ========================================================= */
+  function buildVideoEditor({body}){
+    body.innerHTML = `
+      <div class="app-toolbar">
+        <button data-cmd="load-demo">载入演示片段</button>
+        <button data-cmd="play">播放/暂停</button>
+        <button data-cmd="speed">切换速度</button>
+        <span class="spacer"></span>
+        <span style="font-size:10px;color:var(--text-soft);">这是一个「假装很专业」的视频编辑器</span>
+      </div>
+      <div class="app-content video-root">
+        <div class="video-player">
+          <video id="video-el" controls></video>
+        </div>
+        <div class="video-timeline">
+          <div>时间线 · 仅视觉效果，展示剪辑概念。</div>
+          <div class="video-timeline-row">
+            <div class="video-marker"></div>
+          </div>
+          <div style="margin-top:4px;font-size:10px;opacity:.7;">
+            提示：因为本文件是离线单 HTML，为保证体积，这里没有真正嵌入视频文件。
+            你可以点击「载入演示片段」使用浏览器内置的小测试流。
+          </div>
+        </div>
+      </div>
+    `;
+    const video = body.querySelector('#video-el');
+    let speedIndex = 0;
+    const speeds = [1,1.5,0.5];
+
+    body.querySelector('[data-cmd="load-demo"]').onclick = ()=>{
+      // 使用一个极短的 dataURL 音视频或空白，部分浏览器可能需要用户交互才能播放
+      // 这里直接提示用户使用自己的本地文件
+      const url = prompt('输入一个你自己的视频 URL（本地或在线），比如 mp4 地址：','');
+      if(!url) return;
+      video.src = url;
+      toast('已设置视频源','点击播放尝试播放该视频','🎬');
+    };
+    body.querySelector('[data-cmd="play"]').onclick = ()=>{
+      if(video.paused) video.play().catch(()=>{toast('无法播放','可能是浏览器策略阻止，先手动点播放按钮试试','⚠️');});
+      else video.pause();
+    };
+    body.querySelector('[data-cmd="speed"]').onclick = ()=>{
+      speedIndex = (speedIndex+1)%speeds.length;
+      video.playbackRate = speeds[speedIndex];
+      toast('播放速度', speeds[speedIndex]+'x','⏩',1500);
+    };
+  }
+
+  /* =========================================================
+     应用：游戏中心（贪吃蛇 + 2048）
+     ========================================================= */
+  function buildGamesCenter({body}){
+    body.innerHTML = `
+      <div class="app-toolbar">
+        <span style="font-size:11px;">游戏中心 · 按方向键/WSAD 操作</span>
+        <span class="spacer"></span>
+        <button data-cmd="snake">重开贪吃蛇</button>
+        <button data-cmd="2048">重开 2048</button>
+      </div>
+      <div class="app-content games-root">
+        <div class="games-sidebar">
+          <div class="game-tile active" data-game="snake">
+            <div class="game-badge">🐍</div>
+            <div>
+              <div>贪吃蛇</div>
+              <div style="font-size:10px;opacity:.7;">经典像素风</div>
+            </div>
+          </div>
+          <div class="game-tile" data-game="2048">
+            <div class="game-badge">🔢</div>
+            <div>
+              <div>2048</div>
+              <div style="font-size:10px;opacity:.7;">数字合并</div>
+            </div>
+          </div>
+        </div>
+        <div class="games-main" id="games-main"></div>
+      </div>
+    `;
+    const main = body.querySelector('#games-main');
+    const tiles = body.querySelectorAll('.game-tile');
+    tiles.forEach(t=>t.onclick=()=>{
+      tiles.forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      const game = t.dataset.game;
+      if(game==='snake') renderSnake();
+      else render2048();
+    });
+    body.querySelector('[data-cmd="snake"]').onclick = ()=>renderSnake(true);
+    body.querySelector('[data-cmd="2048"]').onclick = ()=>render2048(true);
+
+    // ---- 贪吃蛇 ----
+    let snakeState=null;
+    function renderSnake(reset){
+      main.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;font-size:11px;">
+          <div>贪吃蛇 · 分数：<span id="snake-score">0</span></div>
+          <div style="opacity:.7;">方向键 或 WASD 控制</div>
+        </div>
+        <div class="snake-board" id="snake-board"></div>
+      `;
+      const board = main.querySelector('#snake-board');
+      const scoreEl = main.querySelector('#snake-score');
+      board.innerHTML = '';
+      const cells = [];
+      for(let i=0;i<400;i++){
+        const c = document.createElement('div');
+        c.className='snake-cell';
+        board.appendChild(c);
+        cells.push(c);
+      }
+
+      if(!snakeState || reset){
+        snakeState = {
+          dir:'right',
+          snake:[{x:5,y:10},{x:4,y:10},{x:3,y:10}],
+          food:{x:15,y:10},
+          score:0,
+          alive:true,
+        };
+      }
+      function draw(){
+        cells.forEach(c=>c.className='snake-cell');
+        snakeState.snake.forEach(s=>{
+          const idx = s.y*20+s.x;
+          if(cells[idx]) cells[idx].classList.add('snake');
+        });
+        const fidx = snakeState.food.y*20+snakeState.food.x;
+        if(cells[fidx]) cells[fidx].classList.add('food');
+        scoreEl.textContent = snakeState.score;
+      }
+      draw();
+
+      function step(){
+        if(!snakeState.alive) return;
+        const head = snakeState.snake[0];
+        let {x,y} = head;
+        if(snakeState.dir==='right') x++;
+        else if(snakeState.dir==='left') x--;
+        else if(snakeState.dir==='up') y--;
+        else if(snakeState.dir==='down') y++;
+        if(x<0||x>=20||y<0||y>=20){
+          snakeState.alive=false;
+          toast('游戏结束','撞到墙啦','☠️');
+          return;
+        }
+        if(snakeState.snake.some(s=>s.x===x&&s.y===y)){
+          snakeState.alive=false;
+          toast('游戏结束','咬到自己啦','☠️');
+          return;
+        }
+        const newHead = {x,y};
+        snakeState.snake.unshift(newHead);
+        if(x===snakeState.food.x && y===snakeState.food.y){
+          snakeState.score += 10;
+          placeFood();
+        }else{
+          snakeState.snake.pop();
+        }
+        draw();
+      }
+      function placeFood(){
+        let x,y;
+        do{
+          x = Math.floor(Math.random()*20);
+          y = Math.floor(Math.random()*20);
+        }while(snakeState.snake.some(s=>s.x===x&&s.y===y));
+        snakeState.food = {x,y};
+      }
+
+      if(snakeState.timer) clearInterval(snakeState.timer);
+      snakeState.timer = setInterval(step,140);
+
+      window.addEventListener('keydown',snakeKeyHandler);
+      function snakeKeyHandler(e){
+        const k = e.key.toLowerCase();
+        if(k==='arrowup'||k==='w'){ if(snakeState.dir!=='down') snakeState.dir='up'; }
+        else if(k==='arrowdown'||k==='s'){ if(snakeState.dir!=='up') snakeState.dir='down'; }
+        else if(k==='arrowleft'||k==='a'){ if(snakeState.dir!=='right') snakeState.dir='left'; }
+        else if(k==='arrowright'||k==='d'){ if(snakeState.dir!=='left') snakeState.dir='right'; }
+      }
+    }
+
+    // ---- 2048 ----
+    let game2048=null;
+    function render2048(reset){
+      main.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;font-size:11px;">
+          <div>2048 · 得分：<span id="g2048-score">0</span></div>
+          <div style="opacity:.7;">方向键/WASD 合并数字</div>
+        </div>
+        <div class="game-2048-board" id="g2048-board"></div>
+      `;
+      const boardEl = main.querySelector('#g2048-board');
+      const scoreEl = main.querySelector('#g2048-score');
+      boardEl.innerHTML='';
+      const tiles = [];
+      for(let i=0;i<16;i++){
+        const t = document.createElement('div');
+        t.className='tile-2048';
+        boardEl.appendChild(t);
+        tiles.push(t);
+      }
+      if(!game2048 || reset){
+        game2048 = {cells:Array(16).fill(0),score:0};
+        addRandomTile();addRandomTile();
+      }
+      draw();
+
+      function draw(){
+        game2048.cells.forEach((v,i)=>{
+          const t = tiles[i];
+          t.textContent = v?String(v):'';
+          if(v) t.dataset.v=v;
+          else delete t.dataset.v;
+        });
+        scoreEl.textContent = game2048.score;
+      }
+      function addRandomTile(){
+        const empty = [];
+        game2048.cells.forEach((v,i)=>{ if(!v) empty.push(i); });
+        if(!empty.length) return;
+        const idx = empty[Math.floor(Math.random()*empty.length)];
+        game2048.cells[idx] = Math.random()<0.9?2:4;
+      }
+      function move(dir){
+        let moved=false;
+        const g = game2048;
+        function line(idxArr){
+          const vals = idxArr.map(i=>g.cells[i]).filter(v=>v);
+          for(let i=0;i<vals.length-1;i++){
+            if(vals[i]===vals[i+1]){
+              vals[i]*=2;
+              g.score += vals[i];
+              vals.splice(i+1,1);
+            }
+          }
+          while(vals.length<4) vals.push(0);
+          idxArr.forEach((i,k)=>{
+            if(g.cells[i]!==vals[k]) moved=true;
+            g.cells[i]=vals[k];
+          });
+        }
+        if(dir==='left'){
+          for(let r=0;r<4;r++) line([r*4,r*4+1,r*4+2,r*4+3]);
+        }else if(dir==='right'){
+          for(let r=0;r<4;r++) line([r*4+3,r*4+2,r*4+1,r*4]);
+        }else if(dir==='up'){
+          for(let c=0;c<4;c++) line([c,c+4,c+8,c+12]);
+        }else if(dir==='down'){
+          for(let c=0;c<4;c++) line([c+12,c+8,c+4,c]);
+        }
+        if(moved){
+          addRandomTile();
+          draw();
+          if(isGameOver()) toast('2048 结束','没有可移动的格子了','😵');
+        }
+      }
+      function isGameOver(){
+        const c = game2048.cells;
+        if(c.some(v=>!v)) return false;
+        for(let i=0;i<16;i++){
+          const v = c[i];
+          const x = i%4, y=Math.floor(i/4);
+          const right = x<3?c[i+1]:0;
+          const down = y<3?c[i+4]:0;
+          if(v===right||v===down) return false;
+        }
+        return true;
+      }
+
+      window.onkeydown = e=>{
+        const k = e.key.toLowerCase();
+        if(k==='arrowup'||k==='w') move('up');
+        else if(k==='arrowdown'||k==='s') move('down');
+        else if(k==='arrowleft'||k==='a') move('left');
+        else if(k==='arrowright'||k==='d') move('right');
+      };
+    }
+
+    renderSnake();
+  }
+
+  /* =========================================================
+     应用：设置中心
+     ========================================================= */
+  function buildSettingsCenter({body}){
+    body.innerHTML = `
+      <div class="app-toolbar">
+        <span style="font-size:11px;">系统设置</span>
+        <span class="spacer"></span>
+        <button data-cmd="reset">恢复默认</button>
+      </div>
+      <div class="app-content settings-root">
+        <div class="settings-sidebar">
+          <div class="settings-item active" data-tab="appearance">外观</div>
+          <div class="settings-item" data-tab="behavior">行为</div>
+          <div class="settings-item" data-tab="about">关于</div>
+        </div>
+        <div class="settings-main" id="settings-main"></div>
+      </div>
+    `;
+    const main = body.querySelector('#settings-main');
+    const items = body.querySelectorAll('.settings-item');
+    items.forEach(i=>i.onclick=()=>{
+      items.forEach(x=>x.classList.remove('active'));
+      i.classList.add('active');
+      renderTab(i.dataset.tab);
+    });
+    body.querySelector('[data-cmd="reset"]').onclick = ()=>{
+      if(confirm('确定恢复所有设置到默认值？')){
+        settings = {theme:'dark',wallpaper:'default',sounds:true,animations:true};
+        applySettings();
+        renderTab('appearance');
+        toast('已恢复默认设置','部分效果需要刷新页面生效','♻️');
+      }
+    };
+
+    function renderTab(tab){
+      if(tab==='appearance'){
+        main.innerHTML = `
+          <h3 style="margin-bottom:6px;">外观</h3>
+          <div style="margin-bottom:8px;">主题：</div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <div class="pill-button" data-theme="dark">深色</div>
+            <div class="pill-button" data-theme="light">浅色</div>
+          </div>
+          <div style="margin-bottom:8px;">壁纸：</div>
+          <div style="display:flex;gap:8px;">
+            <div class="pill-button" data-wall="default">星空渐变</div>
+            <div class="pill-button" data-wall="blue">蓝色波纹</div>
+            <div class="pill-button" data-wall="sunset">暮色</div>
+          </div>
+        `;
+        main.querySelectorAll('[data-theme]').forEach(el=>{
+          el.onclick=()=>{
+            settings.theme = el.dataset.theme;
+            applySettings();
+            saveSettings();
+          };
+        });
+        main.querySelectorAll('[data-wall]').forEach(el=>{
+          el.onclick=()=>{
+            settings.wallpaper = el.dataset.wall;
+            applySettings();
+            saveSettings();
+          };
+        });
+      }else if(tab==='behavior'){
+        main.innerHTML = `
+          <h3 style="margin-bottom:6px;">行为</h3>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div>系统音效</div>
+            <div class="toggle ${settings.sounds?'on':''}" id="toggle-sound"></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>窗口动画</div>
+            <div class="toggle ${settings.animations?'on':''}" id="toggle-anim"></div>
+          </div>
+        `;
+        const tSound = main.querySelector('#toggle-sound');
+        const tAnim = main.querySelector('#toggle-anim');
+        tSound.onclick=()=>{
+          tSound.classList.toggle('on');
+          settings.sounds = tSound.classList.contains('on');
+          saveSettings();
+        };
+        tAnim.onclick=()=>{
+          tAnim.classList.toggle('on');
+          settings.animations = tAnim.classList.contains('on');
+          document.body.style.setProperty('transition', settings.animations?'background 240ms ease-out, filter 240ms ease-out':'none');
+          saveSettings();
+        };
+      }else if(tab==='about'){
+        main.innerHTML = `
+          <h3 style="margin-bottom:6px;">关于 WebOS A</h3>
+          <div style="font-size:11px;color:var(--text-soft);line-height:1.6;">
+            <p>这是一个完全装进单个 HTML 文件里的「迷你操作系统」，</p>
+            <p>灵感来自桌面操作系统的窗口与应用体验。</p>
+            <p>· 内置：记事本、代码编辑器、终端、虚拟 Python 终端、文件管理器、画图、小游戏、简易视频编辑界面等。</p>
+            <p>· 所有 UI 与逻辑仅依赖浏览器，无需服务器。</p>
+            <p>欢迎随意修改源码，变成你自己的 WebOS。</p>
+          </div>
+        `;
+      }
+    }
+
+    renderTab('appearance');
+  }
+
+  /* =========================================================
+     桌面、开始菜单、时钟
+     ========================================================= */
+  function buildDesktop(){
+    const desktop = document.getElementById('desktop');
+    desktop.innerHTML='';
+    appDefinitions.forEach(app=>{
+      if(!app.onDesktop) return;
+      const icon = document.createElement('div');
+      icon.className='desktop-icon';
+      icon.dataset.app = app.id;
+      icon.innerHTML = `<span class="icon-glyph">${app.icon}</span><span>${app.name}</span>`;
+      icon.ondblclick = ()=>createWindow(app.id);
+      desktop.appendChild(icon);
+    });
+
+    // 开始菜单应用
+    const smApps = document.getElementById('start-menu-apps');
+    smApps.innerHTML='';
+    appDefinitions.forEach(app=>{
+      const tile = document.createElement('div');
+      tile.className='start-menu-tile';
+      tile.dataset.app = app.id;
+      tile.innerHTML = `<div class="start-menu-tile-icon">${app.icon}</div><div>${app.name}</div>`;
+      tile.onclick = ()=>{
+        toggleStartMenu(false);
+        createWindow(app.id);
+      };
+      smApps.appendChild(tile);
+    });
+  }
+
+  function buildStartMenu(){
+    const startBtn = document.getElementById('start-button');
+    const startMenu = document.getElementById('start-menu');
+    startBtn.onclick = ()=>toggleStartMenu();
+    document.addEventListener('click', e=>{
+      if(!startMenu.contains(e.target) && e.target!==startBtn && !startBtn.contains(e.target)){
+        toggleStartMenu(false);
+      }
+    });
+
+    const searchInput = document.getElementById('start-search-input');
+    searchInput.addEventListener('input', ()=>{
+      const kw = searchInput.value.trim().toLowerCase();
+      document.querySelectorAll('#start-menu-apps .start-menu-tile').forEach(tile=>{
+        const name = tile.textContent.toLowerCase();
+        tile.style.display = !kw || name.includes(kw) ? '' : 'none';
+      });
+    });
+  }
+
+  function toggleStartMenu(force){
+    const menu = document.getElementById('start-menu');
+    if(typeof force==='boolean'){
+      menu.style.display = force?'flex':'none';
+    }else{
+      menu.style.display = (menu.style.display==='flex')?'none':'flex';
+    }
+  }
+
+  function buildClock(){
+    const timeEl = document.getElementById('clock-time');
+    const dateEl = document.getElementById('clock-date');
+    function update(){
+      const d = new Date();
+      const hh = String(d.getHours()).padStart(2,'0');
+      const mm = String(d.getMinutes()).padStart(2,'0');
+      timeEl.textContent = `${hh}:${mm}`;
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const day = String(d.getDate()).padStart(2,'0');
+      dateEl.textContent = `${y}-${m}-${day}`;
+    }
+    update();
+    setInterval(update, 1000*30);
+  }
+
+  function applySettings(){
+    if(settings.theme==='light'){
+      document.body.style.background = 'radial-gradient(circle at top left,#f5f7ff 0,#cfd7ff 35%,#a3b5ff 100%)';
+      document.documentElement.style.setProperty('--bg','#f4f6fb');
+      document.documentElement.style.setProperty('--bg-soft','#edf1ff');
+      document.documentElement.style.setProperty('--bg-softer','#dde4ff');
+      document.documentElement.style.setProperty('--text','#111827');
+      document.documentElement.style.setProperty('--text-soft','#4b5563');
+    }else{
+      document.body.style.background = 'radial-gradient(circle at top left,#1a2740 0,#050712 52%,#020308 100%)';
+      document.documentElement.style.setProperty('--bg','#101822');
+      document.documentElement.style.setProperty('--bg-soft','#151f2b');
+      document.documentElement.style.setProperty('--bg-softer','#1d2736');
+      document.documentElement.style.setProperty('--text','#e5edf7');
+      document.documentElement.style.setProperty('--text-soft','#a7b4c8');
+    }
+    if(settings.wallpaper==='blue'){
+      document.body.style.background = 'radial-gradient(circle at 20% 0,#76b2fe 0,#1e3c72 45%,#020024 100%)';
+    }else if(settings.wallpaper==='sunset'){
+      document.body.style.background = 'radial-gradient(circle at top,#ff9a9e 0,#fad0c4 30%,#1f1c2c 80%)';
+    }
+  }
+
+  function init(){
+    applySettings();
+    buildDesktop();
+    buildStartMenu();
+    buildClock();
+    toast('欢迎回来','双击桌面图标来打开应用','🖥️',4500);
+  }
+
+  return {
+    init,
+    createWindow,
+  };
+})();
+
+window.addEventListener('DOMContentLoaded', WebOS.init);
+</script>
+</body>
+</html>
