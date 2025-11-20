@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #fdfbf7; /* 米色背景，更有传统感 */
+  color: #4a4a4a;
+}
